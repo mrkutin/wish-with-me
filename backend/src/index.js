@@ -12,7 +12,10 @@ const logger = require('./utils/logger')
 const dbClient = require('./db/client')
 const { errorHandler } = require('./middleware/error-handler')
 const healthRouter = require('./components/health/health.controller')
-const testRouter = require('./components/test/test.controller')
+const authRouter = require('./components/auth/auth.controller')
+const wishlistRouter = require('./components/wishlists/wishlist.controller')
+const cartRouter = require('./components/shopping/cart.controller')
+const notificationRouter = require('./components/notifications/notification.controller')
 
 const app = express()
 
@@ -22,7 +25,7 @@ app.use(cors())
 app.use(compression())
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 10000 // limit each IP to 100 requests per windowMs
 }))
 
 // Logging middleware
@@ -33,7 +36,10 @@ app.use(express.json({ limit: '10kb' }))
 
 // Routes
 app.use('/health', healthRouter)
-app.use('/test', testRouter)
+app.use('/auth', authRouter)
+app.use('/wishlists', wishlistRouter)
+app.use('/cart', cartRouter)
+app.use('/notifications', notificationRouter)
 
 // Swagger documentation
 const swaggerOptions = {
