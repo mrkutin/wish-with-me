@@ -60,6 +60,7 @@
                   "pm.test('Response has correct structure', function() {",
                   "    const wishlist = pm.response.json();",
                   "    pm.expect(wishlist).to.have.property('_id');",
+                  "    pm.expect(wishlist).to.have.property('userId');",
                   "    pm.expect(wishlist).to.have.property('name', 'Birthday Wishlist');",
                   "    pm.expect(wishlist).to.have.property('description');",
                   "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
@@ -115,6 +116,7 @@
                   "    pm.expect(wishlists).to.be.an('array');",
                   "    if (wishlists.length > 0) {",
                   "        pm.expect(wishlists[0]).to.have.property('_id');",
+                  "        pm.expect(wishlists[0]).to.have.property('userId');",
                   "        pm.expect(wishlists[0]).to.have.property('name');",
                   "        pm.expect(wishlists[0]).to.have.property('items').that.is.an('array');",
                   "        pm.expect(wishlists[0]).to.have.property('sharedWith').that.is.an('array');",
@@ -154,6 +156,7 @@
                   "pm.test('Response has correct structure', function() {",
                   "    const wishlist = pm.response.json();",
                   "    pm.expect(wishlist).to.have.property('_id');",
+                  "    pm.expect(wishlist).to.have.property('userId');",
                   "    pm.expect(wishlist).to.have.property('name');",
                   "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
                   "    pm.expect(wishlist).to.have.property('sharedWith').that.is.an('array');",
@@ -233,6 +236,43 @@
           "response": []
         },
         {
+          "name": "Get Wishlist After Update",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Wishlist was updated correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    pm.expect(wishlist).to.have.property('_id', pm.environment.get('wishlistId'));",
+                  "    pm.expect(wishlist).to.have.property('name', 'Updated Birthday Wishlist');",
+                  "    pm.expect(wishlist).to.have.property('description', 'My updated birthday wishes');",
+                  "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(wishlist).to.have.property('sharedWith').that.is.an('array');",
+                  "    pm.expect(wishlist).to.have.property('createdAt').that.is.a('string');",
+                  "    pm.expect(wishlist).to.have.property('updatedAt').that.is.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Add Item to Wishlist",
           "event": [
             {
@@ -253,7 +293,9 @@
                   "    pm.expect(item).to.have.property('title', 'Product Name');",
                   "    pm.expect(item).to.have.property('price', 99.99);",
                   "    pm.expect(item).to.have.property('currency', 'USD');",
+                  "    pm.expect(item).to.have.property('quantity', 1);",
                   "    pm.expect(item).to.have.property('addedAt').that.is.a('string');",
+                  "    pm.expect(item).to.have.property('updatedAt').that.is.a('string');",
                   "});",
                   "",
                   "console.log('Saved itemId:', item._id);"
@@ -283,6 +325,132 @@
                 "{{wishlistId}}",
                 "items"
               ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist After Add Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Item was added correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(wishlist.items).to.have.lengthOf.at.least(1);",
+                  "",
+                  "    const addedItem = wishlist.items.find(item => item._id === pm.environment.get('itemId'));",
+                  "    pm.expect(addedItem).to.not.be.undefined;",
+                  "    pm.expect(addedItem.url).to.eql('https://example.com/product');",
+                  "    pm.expect(addedItem.title).to.eql('Product Name');",
+                  "    pm.expect(addedItem.price).to.eql(99.99);",
+                  "    pm.expect(addedItem.currency).to.eql('USD');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add The Same Item Again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response shows incremented quantity', function() {",
+                  "    const item = pm.response.json();",
+                  "    pm.expect(item).to.have.property('_id', pm.environment.get('itemId'));",
+                  "    pm.expect(item).to.have.property('url', 'https://example.com/product');",
+                  "    pm.expect(item).to.have.property('title', 'Product Name');",
+                  "    pm.expect(item).to.have.property('price', 99.99);",
+                  "    pm.expect(item).to.have.property('currency', 'USD');",
+                  "    pm.expect(item).to.have.property('quantity', 2);",
+                  "    pm.expect(item).to.have.property('addedAt').that.is.a('string');",
+                  "    pm.expect(item).to.have.property('updatedAt').that.is.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://example.com/product\",\n    \"title\": \"Product Name\",\n    \"price\": 99.99,\n    \"currency\": \"USD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist After Same Add",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Item quantity was incremented correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(wishlist.items).to.have.lengthOf.at.least(1);",
+                  "",
+                  "    const addedItem = wishlist.items.find(item => item._id === pm.environment.get('itemId'));",
+                  "    pm.expect(addedItem).to.not.be.undefined;",
+                  "    pm.expect(addedItem.url).to.eql('https://example.com/product');",
+                  "    pm.expect(addedItem.title).to.eql('Product Name');",
+                  "    pm.expect(addedItem.price).to.eql(99.99);",
+                  "    pm.expect(addedItem.currency).to.eql('USD');",
+                  "    pm.expect(addedItem.quantity).to.eql(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
             }
           },
           "response": []
@@ -336,6 +504,38 @@
           "response": []
         },
         {
+          "name": "Get Wishlist After Share",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Wishlist was shared correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    pm.expect(wishlist).to.have.property('sharedWith').that.is.an('array');",
+                  "    pm.expect(wishlist.sharedWith).to.include('target-user-id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Remove Item from Wishlist",
           "event": [
             {
@@ -364,6 +564,38 @@
                 "items",
                 "{{itemId}}"
               ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist After Remove Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Item was removed correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    const removedItem = wishlist.items.find(item => item._id === pm.environment.get('itemId'));",
+                  "    pm.expect(removedItem).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
             }
           },
           "response": []
@@ -400,6 +632,38 @@
           "response": []
         },
         {
+          "name": "Get Wishlist After Unshare",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Wishlist was unshared correctly', function() {",
+                  "    const wishlist = pm.response.json();",
+                  "    pm.expect(wishlist).to.have.property('sharedWith').that.is.an('array');",
+                  "    pm.expect(wishlist.sharedWith).to.not.include('target-user-id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Delete Wishlist",
           "event": [
             {
@@ -426,6 +690,252 @@
                 "wishlists",
                 "{{wishlistId}}"
               ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shopping Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    const cart = pm.response.json();",
+                  "    pm.expect(cart).to.have.property('_id');",
+                  "    pm.expect(cart).to.have.property('userId');",
+                  "    pm.expect(cart).to.have.property('type', 'cart');",
+                  "    pm.expect(cart).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(cart).to.have.property('createdAt').that.is.a('string');",
+                  "    pm.expect(cart).to.have.property('updatedAt').that.is.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item to Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const item = pm.response.json();",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    pm.expect(item).to.have.property('wishlistId', pm.environment.get('wishlistId'));",
+                  "    pm.expect(item).to.have.property('itemId', pm.environment.get('itemId'));",
+                  "    pm.expect(item).to.have.property('url', 'https://example.com/product');",
+                  "    pm.expect(item).to.have.property('title', 'Product Name');",
+                  "    pm.expect(item).to.have.property('price', 99.99);",
+                  "    pm.expect(item).to.have.property('currency', 'USD');",
+                  "    pm.expect(item).to.have.property('quantity', 1);",
+                  "    pm.expect(item).to.have.property('addedAt').that.is.a('string');",
+                  "    pm.expect(item).to.have.property('updatedAt').that.is.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"wishlistId\": \"{{wishlistId}}\",\n    \"itemId\": \"{{itemId}}\",\n    \"url\": \"https://example.com/product\",\n    \"title\": \"Product Name\",\n    \"price\": 99.99,\n    \"currency\": \"USD\",\n    \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart After Add",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure and item', function() {",
+                  "    const cart = pm.response.json();",
+                  "    pm.expect(cart).to.have.property('_id');",
+                  "    pm.expect(cart).to.have.property('items').that.is.an('array');",
+                  "    pm.expect(cart.items).to.have.lengthOf.at.least(1);",
+                  "",
+                  "    const addedItem = cart.items.find(item => item._id === pm.environment.get('cartItemId'));",
+                  "    pm.expect(addedItem).to.not.be.undefined;",
+                  "    pm.expect(addedItem.wishlistId).to.eql(pm.environment.get('wishlistId'));",
+                  "    pm.expect(addedItem.itemId).to.eql(pm.environment.get('itemId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Item from Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function() {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart/items/{{wishlistId}}/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "items", "{{wishlistId}}", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart After Remove",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Item was removed', function() {",
+                  "    const cart = pm.response.json();",
+                  "    const removedItem = cart.items.find(item => ",
+                  "        item.wishlistId === pm.environment.get('wishlistId') &&",
+                  "        item.itemId === pm.environment.get('itemId')",
+                  "    );",
+                  "    pm.expect(removedItem).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function() {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart After Clear",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Cart is empty', function() {",
+                  "    const cart = pm.response.json();",
+                  "    pm.expect(cart.items).to.be.an('array').that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
             }
           },
           "response": []

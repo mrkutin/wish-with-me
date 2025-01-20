@@ -50,6 +50,19 @@ class DatabaseClient {
       throw error
     }
   }
+
+  async getUUID() {
+    try {
+      const response = await this.client.request({
+        db: '_uuids',
+        method: 'get'
+      })
+      return response.uuids[0]
+    } catch (error) {
+      logger.error('Failed to get UUID from CouchDB:', error)
+      throw error
+    }
+  }
 }
 
 module.exports = new DatabaseClient() 

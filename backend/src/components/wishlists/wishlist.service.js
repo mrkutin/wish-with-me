@@ -6,7 +6,6 @@ class WishlistService {
   async createWishlist(userId, data) {
     try {
       const wishlist = {
-        type: 'wishlist',
         userId,
         name: data.name,
         description: data.description,
@@ -28,7 +27,6 @@ class WishlistService {
     try {
       const query = {
         selector: {
-          type: 'wishlist',
           userId: userId
         }
       }
@@ -44,7 +42,7 @@ class WishlistService {
     try {
       const wishlist = await dbClient.getDocument(wishlistId)
       
-      if (!wishlist || wishlist.type !== 'wishlist') {
+      if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
       }
 
@@ -101,7 +99,7 @@ class WishlistService {
     }
   }
 
-  async addItem(userId, wishlistId, item) {
+  async addItem(userId, wishlistId, itemData) {
     try {
       const wishlist = await this.getWishlistById(userId, wishlistId)
 
@@ -109,18 +107,31 @@ class WishlistService {
         throw new AppError(403, 'Only the owner can add items')
       }
 
-      const newItem = {
-        _id: Date.now().toString(),
-        url: item.url,
-        title: item.title,
-        price: item.price,
-        currency: item.currency,
-        addedAt: new Date().toISOString()
+      // Check if item already exists by URL
+      const existingItem = wishlist.items.find(item => item.url === itemData.url)
+
+      let newItem
+      if (existingItem) {
+        // Increment quantity of existing item
+        existingItem.quantity += 1
+        existingItem.updatedAt = new Date().toISOString()
+        newItem = existingItem
+      } else {
+        // Add new item with quantity 1
+        newItem = {
+          _id: await dbClient.getUUID(),
+          url: itemData.url,
+          title: itemData.title,
+          price: itemData.price,
+          currency: itemData.currency,
+          quantity: 1,
+          addedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        wishlist.items.push(newItem)
       }
 
-      wishlist.items.push(newItem)
       wishlist.updatedAt = new Date().toISOString()
-
       await dbClient.db.insert(wishlist)
       return newItem
     } catch (error) {
@@ -143,11 +154,19 @@ class WishlistService {
         throw new AppError(404, 'Item not found')
       }
 
-      wishlist.items.splice(itemIndex, 1)
-      wishlist.updatedAt = new Date().toISOString()
+      const item = wishlist.items[itemIndex]
+      if (item.quantity > 1) {
+        // Decrement quantity
+        item.quantity -= 1
+        item.updatedAt = new Date().toISOString()
+      } else {
+        // Remove item completely
+        wishlist.items.splice(itemIndex, 1)
+      }
 
+      wishlist.updatedAt = new Date().toISOString()
       await dbClient.db.insert(wishlist)
-      return { message: 'Item removed successfully' }
+      return null
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to remove item from wishlist:', error)
