@@ -16,6 +16,7 @@ const authRouter = require('./components/auth/auth.controller')
 const wishlistRouter = require('./components/wishlists/wishlist.controller')
 const cartRouter = require('./components/shopping/cart.controller')
 const notificationRouter = require('./components/notifications/notification.controller')
+const userRouter = require('./components/users/user.controller')
 
 const app = express()
 
@@ -40,6 +41,7 @@ app.use('/auth', authRouter)
 app.use('/wishlists', wishlistRouter)
 app.use('/cart', cartRouter)
 app.use('/notifications', notificationRouter)
+app.use('/users', userRouter)
 
 // Swagger documentation
 const swaggerOptions = {

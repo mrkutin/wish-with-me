@@ -5,14 +5,15 @@ const { AppError } = require('../../middleware/error-handler')
 class CartService {
   async getCart(userId) {
     try {
+      const db = dbClient.client.use('carts')
       const query = {
         selector: {
-          type: 'cart',
           userId: userId
         }
       }
-      const result = await dbClient.db.find(query)
-      return result.docs[0] || await this.createCart(userId)
+      const result = await db.find(query)
+      const carts = result.docs
+      return carts[0] || await this.createCart(userId)
     } catch (error) {
       logger.error('Failed to get cart:', error)
       throw new AppError(500, 'Failed to get cart')
@@ -23,15 +24,26 @@ class CartService {
     try {
       const cart = {
         _id: await dbClient.getUUID(),
-        type: 'cart',
         userId,
         items: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
 
-      const result = await dbClient.createDocument(cart)
-      return { _id: result.id, ...cart }
+      try {
+        const db = dbClient.client.use('carts')
+        const response = await db.insert(cart)
+        return {
+          ...cart,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          document: cart
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
       logger.error('Failed to create cart:', error)
       throw new AppError(500, 'Failed to create cart')
@@ -76,8 +88,20 @@ class CartService {
       }
 
       cart.updatedAt = new Date().toISOString()
-      await dbClient.db.insert(cart)
-      return newItem
+      try {
+        const db = dbClient.client.use('carts')
+        const response = await db.insert(cart)
+        return {
+          ...newItem,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          document: cart
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to add item to cart:', error)
@@ -106,8 +130,20 @@ class CartService {
       }
 
       cart.updatedAt = new Date().toISOString()
-      await dbClient.db.insert(cart)
-      return null
+      try {
+        const db = dbClient.client.use('carts')
+        const response = await db.insert(cart)
+        return {
+          ...cart,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          document: cart
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to remove item from cart:', error)
@@ -118,12 +154,29 @@ class CartService {
   async clearCart(userId) {
     try {
       const cart = await this.getCart(userId)
-      
-      cart.items = []
-      cart.updatedAt = new Date().toISOString()
+      if (!cart._rev) {
+        // If cart doesn't exist yet, nothing to clear
+        return null
+      }
 
-      await dbClient.db.insert(cart)
-      return null
+      // Update cart with empty items array
+      const updatedCart = {
+        ...cart,
+        items: [],
+        updatedAt: new Date().toISOString()
+      }
+      
+      try {
+        const db = dbClient.client.use('carts')
+        await db.destroy(cart._id, cart._rev)
+        return null
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          cartId: cart._id
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to clear cart:', error)

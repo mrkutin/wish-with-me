@@ -8,45 +8,79 @@ class DatabaseClient {
     const username = config.get('couchdb.username')
     const password = config.get('couchdb.password')
 
-    this.client = nano(`${url}`)
-    this.dbName = config.get('couchdb.database')
-    
     if (username && password) {
       this.client = nano(`http://${username}:${password}@${url.replace('http://', '')}`)
+    } else {
+      this.client = nano(url)
     }
+
+    this.databases = {}
   }
 
   async init() {
     try {
       const dbList = await this.client.db.list()
-      if (!dbList.includes(this.dbName)) {
-        await this.client.db.create(this.dbName)
-        logger.info(`Database ${this.dbName} created`)
+      
+      // Initialize users database
+      const usersDb = config.get('couchdb.databases.users')
+      if (!dbList.includes(usersDb)) {
+        await this.client.db.create(usersDb)
+        logger.info(`Database ${usersDb} created`)
       }
-      this.db = this.client.use(this.dbName)
-      logger.info('Database connection established')
+      this.databases.users = this.client.use(usersDb)
+
+      // Initialize wishlists database
+      const wishlistsDb = config.get('couchdb.databases.wishlists')
+      if (!dbList.includes(wishlistsDb)) {
+        await this.client.db.create(wishlistsDb)
+        logger.info(`Database ${wishlistsDb} created`)
+      }
+      this.databases.wishlists = this.client.use(wishlistsDb)
+
+      // Initialize carts database
+      const cartsDb = config.get('couchdb.databases.carts')
+      if (!dbList.includes(cartsDb)) {
+        await this.client.db.create(cartsDb)
+        logger.info(`Database ${cartsDb} created`)
+      }
+      this.databases.carts = this.client.use(cartsDb)
+
+      logger.info('All databases initialized')
     } catch (error) {
-      logger.error('Failed to initialize database:', error)
+      logger.error('Failed to initialize databases:', error)
       throw error
     }
   }
 
-  async createDocument(doc) {
+  async createDocument(database, doc) {
     try {
-      const result = await this.db.insert(doc)
+      const result = await this.databases[database].insert(doc)
       return result
     } catch (error) {
-      logger.error('Failed to create document:', error)
+      logger.error(`Failed to create document in ${database}:`, error)
       throw error
     }
   }
 
-  async getDocument(id) {
+  async getDocument(database, id) {
     try {
-      const doc = await this.db.get(id)
+      const doc = await this.databases[database].get(id)
       return doc
     } catch (error) {
-      logger.error('Failed to get document:', error)
+      if (error.statusCode === 404) {
+        return null
+      }
+      logger.error(`Failed to get document from ${database}:`, error)
+      throw error
+    }
+  }
+
+  async findDocuments(database, query) {
+    try {
+      const result = await this.databases[database].find(query)
+      return result.docs
+    } catch (error) {
+      logger.error(`Failed to find documents in ${database}:`, error)
       throw error
     }
   }
@@ -60,6 +94,19 @@ class DatabaseClient {
       return response.uuids[0]
     } catch (error) {
       logger.error('Failed to get UUID from CouchDB:', error)
+      throw error
+    }
+  }
+
+  async destroyDocument(database, id, rev) {
+    try {
+      const result = await this.databases[database].destroy(id, rev)
+      return result
+    } catch (error) {
+      if (error.statusCode === 404) {
+        return null
+      }
+      logger.error(`Failed to destroy document in ${database}:`, error)
       throw error
     }
   }

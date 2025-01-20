@@ -2,6 +2,9 @@ const express = require('express')
 const router = express.Router()
 const cartService = require('./cart.service')
 const { AppError } = require('../../middleware/error-handler')
+const authMiddleware = require('../../middleware/auth')
+
+router.use(authMiddleware) // Protect all cart routes
 
 /**
  * @swagger
@@ -56,7 +59,7 @@ const { AppError } = require('../../middleware/error-handler')
  */
 router.get('/', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const cart = await cartService.getCart(userId)
     res.json(cart)
   } catch (error) {
@@ -79,7 +82,7 @@ router.get('/', async (req, res, next) => {
  */
 router.post('/items', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const item = await cartService.addItem(userId, req.body)
     res.status(201).json(item)
   } catch (error) {
@@ -107,7 +110,7 @@ router.post('/items', async (req, res, next) => {
  */
 router.delete('/items/:wishlistId/:itemId', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     await cartService.removeItem(userId, req.params.wishlistId, req.params.itemId)
     res.status(204).send()
   } catch (error) {
@@ -124,7 +127,7 @@ router.delete('/items/:wishlistId/:itemId', async (req, res, next) => {
  */
 router.delete('/', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     await cartService.clearCart(userId)
     res.status(204).send()
   } catch (error) {

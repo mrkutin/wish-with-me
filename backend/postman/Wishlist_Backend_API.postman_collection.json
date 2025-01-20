@@ -2,7 +2,8 @@
   "info": {
     "_postman_id": "b159a27e-c33b-4f2d-a877-e8e15a7c9ae8",
     "name": "Wishlist Backend API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
   },
   "item": [
     {
@@ -43,6 +44,402 @@
       "response": []
     },
     {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('token').that.is.a('string');",
+                  "    pm.expect(response).to.have.property('user').that.is.an('object');",
+                  "    pm.expect(response.user).to.have.property('_id').that.is.a('string');",
+                  "    pm.expect(response.user).to.have.property('email', 'test@example.com');",
+                  "    pm.expect(response.user).to.have.property('name', 'Test User');",
+                  "    pm.expect(response.user).to.not.have.property('password');",
+                  "    pm.expect(response.user).to.not.have.property('type');",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.environment.set('authToken', response.token);",
+                  "pm.environment.set('userId', response.user._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('token').that.is.a('string');",
+                  "    pm.expect(response).to.have.property('user').that.is.an('object');",
+                  "    pm.expect(response.user).to.have.property('_id');",
+                  "    pm.expect(response.user).to.have.property('email', 'test@example.com');",
+                  "    pm.expect(response.user).to.have.property('name', 'Test User');",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.environment.set('authToken', response.token);",
+                  "pm.environment.set('userId', response.user._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Invalid Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('status', 'fail');",
+                  "    pm.expect(response).to.have.property('message', 'Invalid credentials');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Signup - Email Already Exists",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('status', 'fail');",
+                  "    pm.expect(response).to.have.property('message', 'Email already registered');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message', 'Logged out successfully');",
+                  "});",
+                  "",
+                  "pm.environment.unset('authToken');",
+                  "pm.environment.unset('userId');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout - Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message', 'No token provided');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get All Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is an array of users', function() {",
+                  "    const users = pm.response.json();",
+                  "    pm.expect(users).to.be.an('array');",
+                  "    if (users.length > 0) {",
+                  "        const user = users[0];",
+                  "        pm.expect(user).to.have.property('_id').that.is.a('string');",
+                  "        pm.expect(user).to.have.property('email').that.is.a('string');",
+                  "        pm.expect(user).to.have.property('name').that.is.a('string');",
+                  "        pm.expect(user).to.have.property('provider').that.is.a('string');",
+                  "        pm.expect(user).to.have.property('createdAt').that.is.a('string');",
+                  "        pm.expect(user).to.have.property('updatedAt').that.is.a('string');",
+                  "        pm.expect(user).to.not.have.property('password');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function() {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "// Verify user is deleted by trying to login",
+                  "const loginRequest = {",
+                  "    url: pm.environment.get('baseUrl') + '/auth/login',",
+                  "    method: 'POST',",
+                  "    header: {",
+                  "        'Content-Type': 'application/json'",
+                  "    },",
+                  "    body: {",
+                  "        mode: 'raw',",
+                  "        raw: JSON.stringify({",
+                  "            email: 'test@example.com',",
+                  "            password: 'password123'",
+                  "        })",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.sendRequest(loginRequest, function (err, res) {",
+                  "    pm.test('Login should fail after deletion', function() {",
+                  "        pm.expect(res).to.have.property('code', 401);",
+                  "        const response = res.json();",
+                  "        pm.expect(response.message).to.equal('Invalid credentials');",
+                  "    });",
+                  "});",
+                  "",
+                  "// Clear environment variables",
+                  "pm.environment.unset('authToken');",
+                  "pm.environment.unset('userId');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Users - Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message', 'No token provided');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Wishlists",
       "item": [
         {
@@ -60,13 +457,14 @@
                   "pm.test('Response has correct structure', function() {",
                   "    const wishlist = pm.response.json();",
                   "    pm.expect(wishlist).to.have.property('_id');",
-                  "    pm.expect(wishlist).to.have.property('userId');",
+                  "    pm.expect(wishlist).to.have.property('userId', pm.environment.get('userId'));",
                   "    pm.expect(wishlist).to.have.property('name', 'Birthday Wishlist');",
                   "    pm.expect(wishlist).to.have.property('description');",
                   "    pm.expect(wishlist).to.have.property('items').that.is.an('array');",
                   "    pm.expect(wishlist).to.have.property('sharedWith').that.is.an('array');",
-                  "    pm.expect(wishlist).to.have.property('createdAt');",
-                  "    pm.expect(wishlist).to.have.property('updatedAt');",
+                  "    pm.expect(wishlist).to.have.property('createdAt').that.is.a('string');",
+                  "    pm.expect(wishlist).to.have.property('updatedAt').that.is.a('string');",
+                  "    pm.expect(wishlist).to.not.have.property('type');",
                   "});",
                   "",
                   "const wishlist = pm.response.json();",
@@ -81,6 +479,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -128,7 +530,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists",
               "host": [
@@ -169,7 +576,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": [
@@ -216,6 +628,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -263,7 +679,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -309,6 +730,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -359,7 +784,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -369,7 +799,7 @@
           "response": []
         },
         {
-          "name": "Add The Same Item Again",
+          "name": "Add Same Item Again",
           "event": [
             {
               "listen": "test",
@@ -401,6 +831,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -446,7 +880,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -483,6 +922,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -526,7 +969,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -552,7 +1000,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/{{itemId}}",
               "host": [
@@ -591,7 +1044,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -617,7 +1075,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share/target-user-id",
               "host": ["{{baseUrl}}"],
@@ -654,7 +1117,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": ["{{baseUrl}}"],
@@ -680,7 +1148,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
               "host": [
@@ -690,6 +1163,37 @@
                 "wishlists",
                 "{{wishlistId}}"
               ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlists - Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message', 'No token provided');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists"]
             }
           },
           "response": []
@@ -714,11 +1218,11 @@
                   "pm.test('Response has correct structure', function() {",
                   "    const cart = pm.response.json();",
                   "    pm.expect(cart).to.have.property('_id');",
-                  "    pm.expect(cart).to.have.property('userId');",
-                  "    pm.expect(cart).to.have.property('type', 'cart');",
+                  "    pm.expect(cart).to.have.property('userId', pm.environment.get('userId'));",
                   "    pm.expect(cart).to.have.property('items').that.is.an('array');",
                   "    pm.expect(cart).to.have.property('createdAt').that.is.a('string');",
                   "    pm.expect(cart).to.have.property('updatedAt').that.is.a('string');",
+                  "    pm.expect(cart).to.not.have.property('type');",
                   "});"
                 ]
               }
@@ -726,7 +1230,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart",
               "host": ["{{baseUrl}}"],
@@ -770,6 +1279,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
@@ -813,7 +1326,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart",
               "host": ["{{baseUrl}}"],
@@ -839,7 +1357,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart/items/{{wishlistId}}/{{itemId}}",
               "host": ["{{baseUrl}}"],
@@ -874,7 +1397,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart",
               "host": ["{{baseUrl}}"],
@@ -900,7 +1428,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart",
               "host": ["{{baseUrl}}"],
@@ -931,6 +1464,42 @@
           ],
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart - Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error message', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message', 'No token provided');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart",
@@ -943,4 +1512,4 @@
       ]
     }
   ]
-} 
+}

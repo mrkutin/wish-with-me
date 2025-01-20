@@ -6,6 +6,7 @@ class WishlistService {
   async createWishlist(userId, data) {
     try {
       const wishlist = {
+        _id: await dbClient.getUUID(),
         userId,
         name: data.name,
         description: data.description,
@@ -15,9 +16,22 @@ class WishlistService {
         updatedAt: new Date().toISOString()
       }
 
-      const result = await dbClient.createDocument(wishlist)
-      return { _id: result.id, ...wishlist }
+      try {
+        const db = dbClient.client.use('wishlists')
+        const response = await db.insert(wishlist)
+        return {
+          ...wishlist,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          document: wishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
+      if (error instanceof AppError) throw error
       logger.error('Failed to create wishlist:', error)
       throw new AppError(500, 'Failed to create wishlist')
     }
@@ -25,12 +39,13 @@ class WishlistService {
 
   async getWishlists(userId) {
     try {
+      const db = dbClient.client.use('wishlists')
       const query = {
         selector: {
           userId: userId
         }
       }
-      const result = await dbClient.db.find(query)
+      const result = await db.find(query)
       return result.docs
     } catch (error) {
       logger.error('Failed to get wishlists:', error)
@@ -40,7 +55,8 @@ class WishlistService {
 
   async getWishlistById(userId, wishlistId) {
     try {
-      const wishlist = await dbClient.getDocument(wishlistId)
+      const db = dbClient.client.use('wishlists')
+      const wishlist = await db.get(wishlistId)
       
       if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
@@ -52,6 +68,9 @@ class WishlistService {
 
       return wishlist
     } catch (error) {
+      if (error.statusCode === 404) {
+        throw new AppError(404, 'Wishlist not found')
+      }
       if (error instanceof AppError) throw error
       logger.error('Failed to get wishlist:', error)
       throw new AppError(500, 'Failed to get wishlist')
@@ -60,7 +79,11 @@ class WishlistService {
 
   async updateWishlist(userId, wishlistId, data) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
+      // Get wishlist to verify it exists and check ownership
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
 
       if (wishlist.userId !== userId) {
         throw new AppError(403, 'Only the owner can update the wishlist')
@@ -73,8 +96,24 @@ class WishlistService {
         updatedAt: new Date().toISOString()
       }
 
-      await dbClient.db.insert(updatedWishlist)
-      return updatedWishlist // CouchDB response already includes _id
+      try {
+        // Use nano client directly for debugging
+        const db = dbClient.client.use('wishlists')
+        const response = await db.insert(updatedWishlist)
+        logger.info('CouchDB update response:', response)
+        
+        return {
+          ...updatedWishlist,
+          _rev: response.rev // Update revision
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          wishlistId,
+          document: updatedWishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to update wishlist:', error)
@@ -84,14 +123,21 @@ class WishlistService {
 
   async deleteWishlist(userId, wishlistId) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
-
-      if (wishlist.userId !== userId) {
-        throw new AppError(403, 'Only the owner can delete the wishlist')
+      // Get wishlist to verify it exists and check ownership
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
       }
 
-      await dbClient.db.destroy(wishlistId, wishlist._rev)
-      return { message: 'Wishlist deleted successfully' }
+      // Check ownership
+      if (wishlist.userId !== userId) {
+        throw new AppError(403, 'Not authorized to delete this wishlist')
+      }
+
+      // Delete wishlist
+      await dbClient.destroyDocument('wishlists', wishlistId, wishlist._rev)
+
+      return null
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to delete wishlist:', error)
@@ -101,7 +147,12 @@ class WishlistService {
 
   async addItem(userId, wishlistId, itemData) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
+      const db = dbClient.client.use('wishlists')
+      const wishlist = await db.get(wishlistId)
+      
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
 
       if (wishlist.userId !== userId) {
         throw new AppError(403, 'Only the owner can add items')
@@ -132,9 +183,24 @@ class WishlistService {
       }
 
       wishlist.updatedAt = new Date().toISOString()
-      await dbClient.db.insert(wishlist)
-      return newItem
+      try {
+        const response = await db.insert(wishlist)
+        return {
+          ...newItem,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          wishlistId,
+          document: wishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
+      if (error.statusCode === 404) {
+        throw new AppError(404, 'Wishlist not found')
+      }
       if (error instanceof AppError) throw error
       logger.error('Failed to add item to wishlist:', error)
       throw new AppError(500, 'Failed to add item to wishlist')
@@ -143,7 +209,12 @@ class WishlistService {
 
   async removeItem(userId, wishlistId, itemId) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
+      const db = dbClient.client.use('wishlists')
+      const wishlist = await db.get(wishlistId)
+      
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
 
       if (wishlist.userId !== userId) {
         throw new AppError(403, 'Only the owner can remove items')
@@ -165,9 +236,25 @@ class WishlistService {
       }
 
       wishlist.updatedAt = new Date().toISOString()
-      await dbClient.db.insert(wishlist)
-      return null
+      try {
+        const response = await db.insert(wishlist)
+        return {
+          ...wishlist,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          wishlistId,
+          itemId,
+          document: wishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
+      if (error.statusCode === 404) {
+        throw new AppError(404, 'Wishlist not found')
+      }
       if (error instanceof AppError) throw error
       logger.error('Failed to remove item from wishlist:', error)
       throw new AppError(500, 'Failed to remove item from wishlist')
@@ -176,7 +263,12 @@ class WishlistService {
 
   async shareWishlist(userId, wishlistId, targetUserId) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
+      const db = dbClient.client.use('wishlists')
+      const wishlist = await db.get(wishlistId)
+      
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
 
       if (wishlist.userId !== userId) {
         throw new AppError(403, 'Only the owner can share the wishlist')
@@ -186,12 +278,29 @@ class WishlistService {
         throw new AppError(400, 'Wishlist already shared with this user')
       }
 
+      // Add target user to sharedWith array
       wishlist.sharedWith.push(targetUserId)
       wishlist.updatedAt = new Date().toISOString()
 
-      await dbClient.db.insert(wishlist)
-      return wishlist // Return the updated wishlist
+      try {
+        const response = await db.insert(wishlist)
+        return {
+          ...wishlist,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          wishlistId,
+          targetUserId,
+          document: wishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
+      if (error.statusCode === 404) {
+        throw new AppError(404, 'Wishlist not found')
+      }
       if (error instanceof AppError) throw error
       logger.error('Failed to share wishlist:', error)
       throw new AppError(500, 'Failed to share wishlist')
@@ -200,22 +309,45 @@ class WishlistService {
 
   async unshareWishlist(userId, wishlistId, targetUserId) {
     try {
-      const wishlist = await this.getWishlistById(userId, wishlistId)
+      const db = dbClient.client.use('wishlists')
+      const wishlist = await db.get(wishlistId)
+      
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
 
       if (wishlist.userId !== userId) {
         throw new AppError(403, 'Only the owner can unshare the wishlist')
       }
 
-      if (!wishlist.sharedWith.includes(targetUserId)) {
+      const index = wishlist.sharedWith.indexOf(targetUserId)
+      if (index === -1) {
         throw new AppError(400, 'Wishlist is not shared with this user')
       }
 
-      wishlist.sharedWith = wishlist.sharedWith.filter(id => id !== targetUserId)
+      // Remove target user from sharedWith array
+      wishlist.sharedWith.splice(index, 1)
       wishlist.updatedAt = new Date().toISOString()
 
-      await dbClient.db.insert(wishlist)
-      return wishlist
+      try {
+        const response = await db.insert(wishlist)
+        return {
+          ...wishlist,
+          _rev: response.rev
+        }
+      } catch (dbError) {
+        logger.error('Database error details:', {
+          error: dbError,
+          wishlistId,
+          targetUserId,
+          document: wishlist
+        })
+        throw new AppError(500, 'Database operation failed')
+      }
     } catch (error) {
+      if (error.statusCode === 404) {
+        throw new AppError(404, 'Wishlist not found')
+      }
       if (error instanceof AppError) throw error
       logger.error('Failed to unshare wishlist:', error)
       throw new AppError(500, 'Failed to unshare wishlist')

@@ -22,10 +22,15 @@ services:
     ports:
       - "5984:5984"
     environment:
-      - COUCHDB_USER=${COUCHDB_USERNAME}
-      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=password
     volumes:
       - couchdb_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   couchdb_data: 

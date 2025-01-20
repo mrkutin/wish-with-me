@@ -36,11 +36,25 @@ const config = convict({
       env: 'COUCHDB_PASSWORD',
       sensitive: true
     },
-    database: {
-      doc: 'CouchDB database name',
-      format: String,
-      default: 'myapp',
-      env: 'COUCHDB_DATABASE'
+    databases: {
+      users: {
+        doc: 'Users database name',
+        format: String,
+        default: 'users',
+        env: 'COUCHDB_USERS_DB'
+      },
+      wishlists: {
+        doc: 'Wishlists database name',
+        format: String,
+        default: 'wishlists',
+        env: 'COUCHDB_WISHLISTS_DB'
+      },
+      carts: {
+        doc: 'Shopping carts database name',
+        format: String,
+        default: 'carts',
+        env: 'COUCHDB_CARTS_DB'
+      }
     }
   },
   logLevel: {
@@ -48,6 +62,42 @@ const config = convict({
     format: ['fatal', 'error', 'warn', 'info', 'debug', 'trace'],
     default: 'info',
     env: 'LOG_LEVEL'
+  },
+  jwt: {
+    secret: {
+      doc: 'JWT secret key',
+      format: String,
+      default: 'your-secret-key',
+      env: 'JWT_SECRET',
+      sensitive: true
+    },
+    expiresIn: {
+      doc: 'JWT expiration time',
+      format: String,
+      default: '7d',
+      env: 'JWT_EXPIRES_IN'
+    }
+  },
+  google: {
+    clientId: {
+      doc: 'Google OAuth client ID',
+      format: String,
+      default: '',
+      env: 'GOOGLE_CLIENT_ID'
+    },
+    clientSecret: {
+      doc: 'Google OAuth client secret',
+      format: String,
+      default: '',
+      env: 'GOOGLE_CLIENT_SECRET',
+      sensitive: true
+    },
+    callbackUrl: {
+      doc: 'Google OAuth callback URL',
+      format: String,
+      default: 'http://localhost:3000/auth/google/callback',
+      env: 'GOOGLE_CALLBACK_URL'
+    }
   }
 })
 

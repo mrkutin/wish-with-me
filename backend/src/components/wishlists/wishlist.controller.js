@@ -3,6 +3,10 @@ const router = express.Router()
 const wishlistService = require('./wishlist.service')
 const { validateWishlist, validateItem } = require('./wishlist.validation')
 const { AppError } = require('../../middleware/error-handler')
+const authMiddleware = require('../../middleware/auth')
+
+router.use(authMiddleware) // Protect all wishlist routes
+
 
 /**
  * @swagger
@@ -66,7 +70,7 @@ const { AppError } = require('../../middleware/error-handler')
  */
 router.post('/', validateWishlist, async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const wishlist = await wishlistService.createWishlist(userId, req.body)
     res.status(201).json(wishlist)
   } catch (error) {
@@ -86,7 +90,7 @@ router.post('/', validateWishlist, async (req, res, next) => {
  */
 router.get('/', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const wishlists = await wishlistService.getWishlists(userId)
     res.json(wishlists)
   } catch (error) {
@@ -109,7 +113,7 @@ router.get('/', async (req, res, next) => {
  */
 router.get('/:id', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const wishlist = await wishlistService.getWishlistById(userId, req.params.id)
     res.json(wishlist)
   } catch (error) {
@@ -138,7 +142,7 @@ router.get('/:id', async (req, res, next) => {
  */
 router.put('/:id', validateWishlist, async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const wishlist = await wishlistService.updateWishlist(userId, req.params.id, req.body)
     res.json(wishlist)
   } catch (error) {
@@ -161,7 +165,7 @@ router.put('/:id', validateWishlist, async (req, res, next) => {
  */
 router.delete('/:id', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId // Get from auth middleware
     await wishlistService.deleteWishlist(userId, req.params.id)
     res.status(204).send()
   } catch (error) {
@@ -190,7 +194,7 @@ router.delete('/:id', async (req, res, next) => {
  */
 router.post('/:id/items', validateItem, async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const item = await wishlistService.addItem(userId, req.params.id, req.body)
     res.status(201).json(item)
   } catch (error) {
@@ -218,7 +222,7 @@ router.post('/:id/items', validateItem, async (req, res, next) => {
  */
 router.delete('/:id/items/:itemId', async (req, res, next) => {
   try {
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     await wishlistService.removeItem(userId, req.params.id, req.params.itemId)
     res.status(204).send()
   } catch (error) {
@@ -257,7 +261,7 @@ router.post('/:id/share', async (req, res, next) => {
       throw new AppError(400, 'Target user ID is required')
     }
 
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     const wishlist = await wishlistService.shareWishlist(userId, req.params.id, targetUserId)
     res.status(201).json(wishlist)
   } catch (error) {
@@ -286,12 +290,13 @@ router.post('/:id/share', async (req, res, next) => {
 router.delete('/:id/share/:targetUserId', async (req, res, next) => {
   try {
     const { targetUserId } = req.params
-    const userId = 'temp-user-id'
+    const userId = req.user.userId
     await wishlistService.unshareWishlist(userId, req.params.id, targetUserId)
     res.status(204).send()
   } catch (error) {
     next(error)
   }
 })
+
 
 module.exports = router 
