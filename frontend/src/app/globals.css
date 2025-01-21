@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Primary colors */
+  --primary: #4F46E5;      /* Indigo-600: Main brand color - trustworthy, professional */
+  --primary-light: #818CF8; /* Indigo-400: Lighter variant for hover states */
+  --primary-dark: #3730A3;  /* Indigo-800: Darker variant for active states */
+
+  /* Accent colors */
+  --accent: #F43F5E;       /* Rose-500: For special actions, wishlist hearts */
+  --accent-light: #FB7185; /* Rose-400: Lighter variant */
+  
+  /* Background colors */
+  --background: #FFFFFF;    /* White: Main background */
+  --background-alt: #F9FAFB; /* Gray-50: Alternative background */
+  --background-card: #FFFFFF; /* White: Card background */
+  
+  /* Text colors */
+  --text-primary: #111827; /* Gray-900: Primary text */
+  --text-secondary: #4B5563; /* Gray-600: Secondary text */
+  --text-muted: #9CA3AF;   /* Gray-400: Muted text */
+  
+  /* Border colors */
+  --border: #E5E7EB;       /* Gray-200: Subtle borders */
+  --border-focus: #4F46E5; /* Indigo-600: Focus state borders */
+
+  /* Success/Error states */
+  --success: #059669;      /* Emerald-600: Success states */
+  --error: #DC2626;        /* Red-600: Error states */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark mode adjustments */
+    --background: #0F172A;    /* Slate-900 */
+    --background-alt: #1E293B; /* Slate-800 */
+    --background-card: #1E293B; /* Slate-800 */
+    
+    --text-primary: #F1F5F9;  /* Slate-100 */
+    --text-secondary: #CBD5E1; /* Slate-300 */
+    --text-muted: #94A3B8;    /* Slate-400 */
+    
+    --border: #334155;        /* Slate-700 */
+    --border-focus: #818CF8;  /* Indigo-400 */
+
+    /* Keep primary and accent colors slightly lighter for dark mode */
+    --primary: #818CF8;       /* Indigo-400 */
+    --primary-light: #A5B4FC; /* Indigo-300 */
+    --primary-dark: #6366F1;  /* Indigo-500 */
+  }
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Utility classes */
+.bg-primary { background-color: var(--primary); }
+.text-primary { color: var(--primary); }
+.border-primary { border-color: var(--primary); }
+
+.bg-accent { background-color: var(--accent); }
+.text-accent { color: var(--accent); }

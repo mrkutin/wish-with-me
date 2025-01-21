@@ -2,41 +2,14 @@
 
 You are an expert frontend developer implementing a modern web application that allows users to create, share, and manage wishlists, with an integrated shopping cart system. The backend is already implemented in Node.js with CouchDB.
 
-Make sure to use PouchDB to interact with the backend and make sure the app still works when the backend is not available!
-
 Put all the code in the frontend folder.
-
-## Core Features
-
-### Authentication Flow
-- Email/password login and registration
-- Protected routes requiring authentication
-- JWT token management (7-day expiration)
-- User session persistence
-
-### Wishlist Management
-- Create and manage personal wishlists
-- Add/remove items to wishlists
-- Share wishlists with other users
-- View shared wishlists
-- Update wishlist details
-
-### Shopping Cart
-- Add items from wishlists to cart
-- Manage cart items (update quantity, remove)
-- Persistent cart state
-- Clear cart functionality
 
 ## Technical Stack
 
 ### Required Technologies
 - Next.js 14 (App Router)
-- PouchDB
-- TypeScript
-- Tailwind CSS + Shadcn UI
-- TanStack Query
-- Zustand
-- Zod
+- Tailwind CSS
+
 
 ## API Interface Types
 

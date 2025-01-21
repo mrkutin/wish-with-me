@@ -1,0 +1,28 @@
+Make sure to use PouchDB to interact with the backend and make sure the app still works when the backend is not available!
+
+## Core Features
+
+### Authentication Flow
+- Email/password login and registration
+- Protected routes requiring authentication
+- JWT token management (7-day expiration)
+- User session persistence
+
+### Wishlist Management
+- Create and manage personal wishlists
+- Add/remove items to wishlists
+- Share wishlists with other users
+- View shared wishlists
+- Update wishlist details
+
+### Shopping Cart
+- Add items from wishlists to cart
+- Manage cart items (update quantity, remove)
+- Persistent cart state
+- Clear cart functionality
+
+### Required Technologies
+- Next.js 14 (App Router)
+- PouchDB
+- Tailwind CSS
+
