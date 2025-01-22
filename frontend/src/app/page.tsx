@@ -4,26 +4,6 @@ import { ArrowRight, Heart, Gift, Star } from 'lucide-react'
 export default function Home() {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="px-6 py-4 border-b">
-        <nav className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-xl font-semibold">WishWithMe</div>
-          <div className="space-x-4">
-            <Link 
-              href="/login" 
-              className="text-sm font-medium hover:text-gray-600 transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link 
-              href="/signup"
-              className="text-sm font-medium bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-light transition-colors"
-            >
-              Get started
-            </Link>
-          </div>
-        </nav>
-      </header>
-
       <main>
         {/* Hero Section */}
         <section className="px-6 py-24 sm:py-32 relative isolate">

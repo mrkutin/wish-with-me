@@ -1,13 +1,12 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import type { Metadata } from "next"
+import "./globals.css"
+import { AuthProvider } from "@/contexts/AuthContext"
+import RootLayoutClient from "@/components/RootLayoutClient"
 
 export const metadata: Metadata = {
   title: "WishWithMe - Create and Share Wishlists",
   description: "Create, manage and share your wishlists with friends and family",
-};
+}
 
 export default function RootLayout({
   children,
@@ -16,9 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full antialiased`}>
-        {children}
+      <body className="h-full antialiased">
+        <AuthProvider>
+          <RootLayoutClient>{children}</RootLayoutClient>
+        </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

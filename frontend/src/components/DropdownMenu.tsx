@@ -1,0 +1,61 @@
+import { useEffect, useRef, useState } from 'react'
+import { MoreVertical } from 'lucide-react'
+
+interface DropdownAction {
+  label: string
+  onClick: () => void
+  icon?: React.ReactNode
+  variant?: 'default' | 'danger'
+}
+
+interface DropdownMenuProps {
+  actions: DropdownAction[]
+}
+
+export default function DropdownMenu({ actions }: DropdownMenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1 rounded-md hover:bg-background-alt transition-colors"
+      >
+        <MoreVertical className="h-5 w-5 text-text-secondary" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border z-10">
+          <div className="py-1">
+            {actions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  action.onClick()
+                  setIsOpen(false)
+                }}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-background-alt transition-colors
+                  ${action.variant === 'danger' ? 'text-error' : 'text-text-primary'}`}
+              >
+                {action.icon && <span className="w-4 h-4">{action.icon}</span>}
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+} 
