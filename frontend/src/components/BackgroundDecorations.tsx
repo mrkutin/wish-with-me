@@ -4,7 +4,7 @@ import { Gift, Heart } from 'lucide-react'
 
 export default function BackgroundDecorations() {
   return (
-    <div className="absolute inset-0 overflow-hidden max-w-[1800px] mx-auto">
+    <div className="absolute inset-0 overflow-hidden max-w-[1800px] mx-auto -z-10 pointer-events-none">
       {/* Left side decorations */}
       <div className="absolute left-8 top-[20%] text-primary/5 transform -rotate-12">
         <Gift className="w-24 h-24" />
