@@ -1,19 +1,22 @@
-import Link from 'next/link'
-import { ArrowRight, Heart, Gift, Star } from 'lucide-react'
+'use client'
 
-export default function Home() {
+import { Plus, ArrowRight, Star } from 'lucide-react'
+import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
+import LoadingSpinner from '@/components/LoadingSpinner'
+
+export default function HomePage() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
   return (
     <div className="flex min-h-full flex-col">
       <main>
         {/* Hero Section */}
         <section className="px-6 py-24 sm:py-32 relative isolate">
-          <div className="absolute -z-10 right-5 top-10">
-            <Heart className="h-24 w-24 text-accent/10 rotate-12" />
-          </div>
-          <div className="absolute -z-10 left-10 bottom-10">
-            <Gift className="h-16 w-16 text-accent/10 -rotate-12" />
-          </div>
-          
           <div className="max-w-7xl mx-auto text-center">
             <div className="mb-8 flex items-center justify-center">
               <span className="inline-flex items-center gap-x-2 rounded-full bg-accent/10 px-4 py-1 text-sm text-accent ring-1 ring-accent/20">
@@ -31,19 +34,31 @@ export default function Home() {
               and keep track of your shopping - all in one place.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link
-                href="/signup"
-                className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
-              >
-                Create your wishlist
-                <ArrowRight className="ml-2 inline-block h-4 w-4" />
-              </Link>
-              <Link
-                href="/about"
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-accent transition-colors"
-              >
-                Learn more <span aria-hidden="true">→</span>
-              </Link>
+              {!user ? (
+                <>
+                  <Link
+                    href="/signup"
+                    className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
+                  >
+                    Create your wishlist
+                    <ArrowRight className="ml-2 inline-block h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/about"
+                    className="text-sm font-semibold leading-6 text-gray-900 hover:text-accent transition-colors"
+                  >
+                    Learn more <span aria-hidden="true">→</span>
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href="/wishlists"
+                  className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Wishlist
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -75,12 +90,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Add a new testimonial section with accent elements */}
+        {/* Testimonial section */}
         <section className="py-24 px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="mb-8">
-              <Heart className="h-8 w-8 text-accent mx-auto" fill="currentColor" />
-            </div>
             <blockquote>
               <p className="text-xl font-medium text-text-primary">
                 "WishWithMe made organizing our wedding registry so much easier! 

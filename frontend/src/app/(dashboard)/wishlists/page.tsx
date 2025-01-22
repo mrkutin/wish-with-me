@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Gift, MoreVertical, Share2, Trash2, Heart, Edit, Link as LinkIcon } from 'lucide-react'
+import { Plus, Gift, MoreVertical, Share2, Trash2, Heart, Edit, Link as LinkIcon, Star, Package } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -201,11 +201,14 @@ export default function WishlistsPage() {
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-medium text-text-primary">
-              <Link href={`/wishlists/${wishlist._id}`} className="hover:text-primary transition-colors">
-                {wishlist.name}
-              </Link>
-            </h3>
+            <div className="flex items-center space-x-2 mb-2">
+              <Gift className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-medium text-text-primary">
+                <Link href={`/wishlists/${wishlist._id}`} className="hover:text-primary transition-colors">
+                  {wishlist.name}
+                </Link>
+              </h3>
+            </div>
             {wishlist.description && (
               <p className="mt-1 text-text-secondary text-sm">{wishlist.description}</p>
             )}
@@ -249,11 +252,11 @@ export default function WishlistsPage() {
         <main className="max-w-7xl mx-auto px-6 py-8">
           {wishlists.length === 0 ? (
             <div className="bg-background rounded-lg border border-border p-12 text-center">
-              <div className="mx-auto h-12 w-12 text-text-secondary">
-                <Gift className="h-12 w-12" />
+              <div className="text-center">
+                <Gift className="h-12 w-12 mx-auto text-primary mb-4" />
+                <h2 className="text-xl font-semibold text-text-primary">Create your first wishlist</h2>
+                <p className="mt-2 text-text-secondary">Get started by creating a new wishlist.</p>
               </div>
-              <h3 className="mt-4 text-lg font-medium text-text-primary">No wishlists yet</h3>
-              <p className="mt-2 text-text-secondary">Get started by creating a new wishlist.</p>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
