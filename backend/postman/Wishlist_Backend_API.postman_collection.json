@@ -206,16 +206,16 @@
               }
             }
           ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"Test User\"\n}"
             },
             "url": {
@@ -292,9 +292,9 @@
               "raw": "{{baseUrl}}/auth/logout",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "logout"]
-        }
-      },
-      "response": []
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -436,14 +436,61 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has correct structure', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('_id');",
+                  "    pm.expect(response).to.have.property('name', 'Updated Name');",
+                  "    pm.expect(response).to.have.property('email');",
+                  "    pm.expect(response).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Name\",\n    \"currentPassword\": \"password123\",\n    \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
       "name": "Wishlists",
       "item": [
-        {
-          "name": "Create Wishlist",
+    {
+      "name": "Create Wishlist",
           "event": [
             {
               "listen": "test",
@@ -473,20 +520,20 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
               },
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
+          }
+        ],
+        "body": {
+          "mode": "raw",
               "raw": "{\n    \"name\": \"Birthday Wishlist\",\n    \"description\": \"My birthday wishes for 2024\"\n}"
             },
             "url": {
@@ -497,9 +544,9 @@
               "path": [
                 "wishlists"
               ]
-            }
-          },
-          "response": []
+        }
+      },
+      "response": []
         },
         {
           "name": "Get All Wishlists",
@@ -692,6 +739,194 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Items",
+          "item": [
+            {
+              "name": "Add Item with Name",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status code is 201', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Response has correct structure', function() {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response).to.have.property('_id').that.is.a('string');",
+                      "    pm.expect(response).to.have.property('name', 'Test Item');",
+                      "    pm.expect(response).to.not.have.property('url');",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "pm.environment.set('itemId', response._id);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Test Item\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "{{wishlistId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Item with URL",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status code is 201', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "",
+                      "pm.test('Response has correct structure', function() {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response).to.have.property('_id').that.is.a('string');",
+                      "    pm.expect(response).to.have.property('url', 'https://example.com/item');",
+                      "    pm.expect(response).to.not.have.property('name');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"url\": \"https://example.com/item\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "{{wishlistId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Item - Invalid Both Fields",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status code is 400', function() {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('Error message is correct', function() {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.message).to.equal('Provide either name or url, not both');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Test Item\",\n    \"url\": \"https://example.com/item\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "{{wishlistId}}", "items"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Item - No Fields",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('Status code is 400', function() {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test('Error message is correct', function() {",
+                      "    const response = pm.response.json();",
+                      "    pm.expect(response.message).to.equal('Provide either name or url');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "{{wishlistId}}", "items"]
+                }
+              },
+              "response": []
+            }
+          ]
         },
         {
           "name": "Add Item to Wishlist",
