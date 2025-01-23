@@ -7,7 +7,7 @@ interface AddItemModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: {
-    name: string
+    name?: string
     url?: string
   }) => Promise<void>
 }
@@ -27,7 +27,7 @@ export default function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModal
 
     try {
       await onSubmit({
-        name: formData.name,
+        name: formData.name || undefined,
         url: formData.url || undefined
       })
       
