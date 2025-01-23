@@ -1,49 +1,42 @@
-const { AppError } = require('../../middleware/error-handler')
+const { body } = require('express-validator')
+const { validate } = require('../../middleware/validate')
 
-const validateUpdateProfile = (req, res, next) => {
-  const { name, email, currentPassword, newPassword } = req.body
+const validateUser = validate([
+  body('email')
+    .isEmail()
+    .withMessage('Must be a valid email'),
+  body('password')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters'),
+  body('name')
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ max: 100 })
+    .withMessage('Name must be less than 100 characters')
+])
 
-  // At least one field must be provided
-  if (!name && !email && !newPassword) {
-    return next(new AppError(400, 'Provide at least one field to update'))
-  }
-
-  // Validate name if provided
-  if (name !== undefined) {
-    if (typeof name !== 'string' || name.trim().length === 0) {
-      return next(new AppError(400, 'Name cannot be empty'))
-    }
-    if (name.length > 100) {
-      return next(new AppError(400, 'Name must not exceed 100 characters'))
-    }
-  }
-
-  // Validate email if provided
-  if (email !== undefined) {
-    if (typeof email !== 'string' || !email.includes('@')) {
-      return next(new AppError(400, 'Invalid email format'))
-    }
-    if (email.length > 255) {
-      return next(new AppError(400, 'Email must not exceed 255 characters'))
-    }
-  }
-
-  // Validate password if provided
-  if (newPassword !== undefined) {
-    if (!currentPassword) {
-      return next(new AppError(400, 'Current password is required to set new password'))
-    }
-    if (typeof newPassword !== 'string' || newPassword.length < 6) {
-      return next(new AppError(400, 'New password must be at least 6 characters'))
-    }
-    if (newPassword.length > 100) {
-      return next(new AppError(400, 'New password must not exceed 100 characters'))
-    }
-  }
-
-  next()
-}
+const validateUpdateProfile = validate([
+  body('name')
+    .optional()
+    .notEmpty()
+    .withMessage('Name cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Name must be less than 100 characters'),
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('Must be a valid email'),
+  body('currentPassword')
+    .optional()
+    .isLength({ min: 6 })
+    .withMessage('Current password must be at least 6 characters'),
+  body('newPassword')
+    .optional()
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters')
+])
 
 module.exports = {
+  validateUser,
   validateUpdateProfile
 } 

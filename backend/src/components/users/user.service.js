@@ -19,32 +19,55 @@ class UserService {
 
   async deleteUser(userId) {
     try {
+      logger.info('Attempting to delete user:', { userId })
+
       // Get user to verify it exists
       const user = await dbClient.getDocument('users', userId)
       if (!user) {
         throw new AppError(404, 'User not found')
       }
 
-      // Delete user's wishlists
+      // Get all user's wishlists
       const wishlists = await dbClient.findDocuments('wishlists', {
         selector: { userId }
       })
+
+      // Delete each wishlist and its items
       for (const wishlist of wishlists) {
+        // Delete all items in the wishlist
+        const items = await dbClient.findDocuments('items', {
+          selector: { wishlistId: wishlist._id }
+        })
+        for (const item of items) {
+          await dbClient.destroyDocument('items', item._id, item._rev)
+        }
+
+        // Delete the wishlist itself
         await dbClient.destroyDocument('wishlists', wishlist._id, wishlist._rev)
       }
 
-      // Delete user's cart
-      const carts = await dbClient.findDocuments('carts', {
-        selector: { userId }
+      // Find and update any shared wishlists
+      const sharedWishlists = await dbClient.findDocuments('wishlists', {
+        selector: {
+          sharedWith: { $elemMatch: { $eq: userId } }
+        }
       })
-      for (const cart of carts) {
-        await dbClient.destroyDocument('carts', cart._id, cart._rev)
+
+      // Remove user from sharedWith arrays
+      for (const wishlist of sharedWishlists) {
+        const updatedSharedWith = wishlist.sharedWith.filter(id => id !== userId)
+        await dbClient.updateDocument('wishlists', wishlist._id, {
+          ...wishlist,
+          sharedWith: updatedSharedWith
+        })
       }
 
-      // Delete user
+      // Finally delete the user
       await dbClient.destroyDocument('users', userId, user._rev)
 
+      logger.info('Successfully deleted user and all related data:', { userId })
       return null
+
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to delete user:', error)
@@ -54,9 +77,17 @@ class UserService {
 
   async updateProfile(userId, updateData) {
     try {
-      // Get current user
-      const user = await dbClient.getDocument('users', userId)
-      if (!user) {
+      logger.info('Attempting to update user:', { userId })
+
+      // Log all users in the database
+      const allUsers = await dbClient.findDocuments('users', { selector: {} })
+      logger.info('All users in database:', { users: allUsers })
+
+      // Get current user using the ID from the token
+      const currentUser = await dbClient.getDocument('users', userId)
+      logger.info('Database response:', { currentUser })
+
+      if (!currentUser) {
         throw new AppError(404, 'User not found')
       }
 
@@ -87,7 +118,7 @@ class UserService {
         // Verify current password
         const isValidPassword = await bcrypt.compare(
           updateData.currentPassword,
-          user.password
+          currentUser.password
         )
         if (!isValidPassword) {
           throw new AppError(401, 'Current password is incorrect')
@@ -100,28 +131,32 @@ class UserService {
       // Update timestamp
       updates.updatedAt = new Date().toISOString()
 
-      // Update user document
-      const updatedUser = {
-        ...user,
-        ...updates
-      }
-
       try {
-        const response = await dbClient.databases.users.insert(updatedUser)
+        // Create the update document by spreading currentUser first, then updates
+        const updatedUser = {
+          ...currentUser,  // This includes _id and _rev
+          ...updates
+        }
+
+        // Update the document using the dbClient method
+        const response = await dbClient.updateDocument('users', userId, updatedUser)
+        
+        // Prepare the response
         const result = {
           ...updatedUser,
           _rev: response.rev
         }
         delete result.password
         return result
+
       } catch (dbError) {
-        logger.error('Database error details:', {
-          error: dbError,
-          userId,
-          updates
-        })
+        logger.error('Database update error:', dbError)
+        if (dbError.statusCode === 409) {
+          throw new AppError(409, 'Document update conflict. Please try again.')
+        }
         throw new AppError(500, 'Database operation failed')
       }
+
     } catch (error) {
       if (error instanceof AppError) throw error
       logger.error('Failed to update user profile:', error)

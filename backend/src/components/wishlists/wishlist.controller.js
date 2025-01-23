@@ -153,6 +153,41 @@ router.put('/:id', validateWishlist, async (req, res, next) => {
 /**
  * @swagger
  * /wishlists/{id}:
+ *   patch:
+ *     summary: Update a wishlist
+ *     tags: [Wishlists]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ */
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const wishlistId = req.params.id
+    const userId = req.user.userId
+    const updatedWishlist = await wishlistService.updateWishlist(wishlistId, userId, req.body)
+    res.json(updatedWishlist)
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * @swagger
+ * /wishlists/{id}:
  *   delete:
  *     summary: Delete a wishlist
  *     tags: [Wishlists]
@@ -194,11 +229,19 @@ router.delete('/:id', async (req, res, next) => {
  */
 router.post('/:id/items', validateItem, async (req, res, next) => {
   try {
-    const userId = req.user.userId
-    const item = await wishlistService.addItem(userId, req.params.id, req.body)
-    res.status(201).json(item)
+    const wishlistId = req.params.id;  // This is the wishlist ID from URL
+    const userId = req.user.userId;     // This is the user ID from token
+    
+    console.log('DEBUG - Controller adding item:', {
+      wishlistId,
+      userId,
+      body: req.body
+    });
+
+    const item = await wishlistService.addItem(wishlistId, userId, req.body);
+    res.status(201).json(item);
   } catch (error) {
-    next(error)
+    next(error);
   }
 })
 
@@ -222,8 +265,11 @@ router.post('/:id/items', validateItem, async (req, res, next) => {
  */
 router.delete('/:id/items/:itemId', async (req, res, next) => {
   try {
+    const wishlistId = req.params.id
+    const itemId = req.params.itemId
     const userId = req.user.userId
-    await wishlistService.removeItem(userId, req.params.id, req.params.itemId)
+
+    await wishlistService.removeItem(wishlistId, userId, itemId)
     res.status(204).send()
   } catch (error) {
     next(error)
@@ -256,13 +302,15 @@ router.delete('/:id/items/:itemId', async (req, res, next) => {
  */
 router.post('/:id/share', async (req, res, next) => {
   try {
+    const wishlistId = req.params.id
+    const userId = req.user.userId
     const { userId: targetUserId } = req.body
+
     if (!targetUserId) {
       throw new AppError(400, 'Target user ID is required')
     }
 
-    const userId = req.user.userId
-    const wishlist = await wishlistService.shareWishlist(userId, req.params.id, targetUserId)
+    const wishlist = await wishlistService.shareWishlist(wishlistId, userId, targetUserId)
     res.status(201).json(wishlist)
   } catch (error) {
     next(error)

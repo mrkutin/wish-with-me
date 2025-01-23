@@ -77,7 +77,7 @@ class WishlistService {
     }
   }
 
-  async updateWishlist(userId, wishlistId, data) {
+  async updateWishlist(wishlistId, userId, data) {
     try {
       // Get wishlist to verify it exists and check ownership
       const wishlist = await dbClient.getDocument('wishlists', wishlistId)
@@ -96,23 +96,10 @@ class WishlistService {
         updatedAt: new Date().toISOString()
       }
 
-      try {
-        // Use nano client directly for debugging
-        const db = dbClient.client.use('wishlists')
-        const response = await db.insert(updatedWishlist)
-        logger.info('CouchDB update response:', response)
-        
-        return {
-          ...updatedWishlist,
-          _rev: response.rev // Update revision
-        }
-      } catch (dbError) {
-        logger.error('Database error details:', {
-          error: dbError,
-          wishlistId,
-          document: updatedWishlist
-        })
-        throw new AppError(500, 'Database operation failed')
+      const result = await dbClient.updateDocument('wishlists', wishlistId, updatedWishlist)
+      return {
+        ...updatedWishlist,
+        _rev: result.rev
       }
     } catch (error) {
       if (error instanceof AppError) throw error
@@ -145,79 +132,92 @@ class WishlistService {
     }
   }
 
-  async addItem(userId, wishlistId, itemData) {
+  async addItem(wishlistId, userId, itemData) {
     try {
-      const db = dbClient.client.use('wishlists')
-      const wishlist = await db.get(wishlistId)
-      
+      console.log('DEBUG - addItem called with:', { wishlistId, userId, itemData });
+
+      // Get wishlist to verify it exists and user owns it
+      console.log('DEBUG - About to get wishlist document');
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId);
+      console.log('DEBUG - Wishlist document retrieved:', wishlist);
+
       if (!wishlist) {
-        throw new AppError(404, 'Wishlist not found')
+        console.log('DEBUG - Wishlist not found:', wishlistId);
+        throw new AppError(404, 'Wishlist not found');
       }
 
       if (wishlist.userId !== userId) {
-        throw new AppError(403, 'Only the owner can add items')
+        console.log('DEBUG - Unauthorized access:', { wishlistUserId: wishlist.userId, requestingUserId: userId });
+        throw new AppError(403, 'Not authorized to modify this wishlist');
       }
 
-      // Check if item already exists by URL
-      const existingItem = wishlist.items.find(item => item.url === itemData.url)
+      // Validate item data
+      if (!itemData.name && !itemData.url) {
+        throw new AppError(400, 'Either name or URL is required')
+      }
+      if (itemData.name && itemData.url) {
+        throw new AppError(400, 'Cannot provide both name and URL')
+      }
 
-      let newItem
+      // Initialize items array if it doesn't exist
+      wishlist.items = wishlist.items || [];
+
+      // Check for existing item
+      const existingItem = wishlist.items.find(item => 
+        (itemData.name && item.name === itemData.name) || 
+        (itemData.url && item.url === itemData.url)
+      );
+
+      let updatedItem;
       if (existingItem) {
         // Increment quantity of existing item
-        existingItem.quantity += 1
-        existingItem.updatedAt = new Date().toISOString()
-        newItem = existingItem
+        existingItem.quantity += 1;
+        existingItem.updatedAt = new Date().toISOString();
+        updatedItem = existingItem;
       } else {
-        // Add new item with quantity 1
-        newItem = {
+        // Create new item
+        updatedItem = {
           _id: await dbClient.getUUID(),
-          url: itemData.url,
-          title: itemData.title,
-          price: itemData.price,
-          currency: itemData.currency,
+          wishlistId,
           quantity: 1,
           addedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
+        };
+
+        // Add only the provided attribute (name or url)
+        if (itemData.name) {
+          updatedItem.name = itemData.name;
+        } else if (itemData.url) {
+          updatedItem.url = itemData.url;
         }
-        wishlist.items.push(newItem)
+
+        // Add new item to wishlist
+        wishlist.items.push(updatedItem);
       }
 
-      wishlist.updatedAt = new Date().toISOString()
-      try {
-        const response = await db.insert(wishlist)
-        return {
-          ...newItem,
-          _rev: response.rev
-        }
-      } catch (dbError) {
-        logger.error('Database error details:', {
-          error: dbError,
-          wishlistId,
-          document: wishlist
-        })
-        throw new AppError(500, 'Database operation failed')
-      }
+      // Update wishlist in database
+      wishlist.updatedAt = new Date().toISOString();
+      await dbClient.updateDocument('wishlists', wishlistId, wishlist);
+
+      return updatedItem;
     } catch (error) {
-      if (error.statusCode === 404) {
-        throw new AppError(404, 'Wishlist not found')
-      }
-      if (error instanceof AppError) throw error
-      logger.error('Failed to add item to wishlist:', error)
-      throw new AppError(500, 'Failed to add item to wishlist')
+      if (error instanceof AppError) throw error;
+      logger.error('Failed to add item to wishlist:', error);
+      throw new AppError(500, 'Failed to add item to wishlist');
     }
   }
 
-  async removeItem(userId, wishlistId, itemId) {
+  async removeItem(wishlistId, userId, itemId) {
     try {
-      const db = dbClient.client.use('wishlists')
-      const wishlist = await db.get(wishlistId)
-      
+      // Get wishlist using dbClient
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+
       if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
       }
 
       if (wishlist.userId !== userId) {
-        throw new AppError(403, 'Only the owner can remove items')
+        throw new AppError(403, 'Not authorized to modify this wishlist')
       }
 
       const itemIndex = wishlist.items.findIndex(item => item._id === itemId)
@@ -236,36 +236,22 @@ class WishlistService {
       }
 
       wishlist.updatedAt = new Date().toISOString()
-      try {
-        const response = await db.insert(wishlist)
-        return {
-          ...wishlist,
-          _rev: response.rev
-        }
-      } catch (dbError) {
-        logger.error('Database error details:', {
-          error: dbError,
-          wishlistId,
-          itemId,
-          document: wishlist
-        })
-        throw new AppError(500, 'Database operation failed')
-      }
+      
+      // Update wishlist using dbClient
+      await dbClient.updateDocument('wishlists', wishlistId, wishlist)
+
+      return null
     } catch (error) {
-      if (error.statusCode === 404) {
-        throw new AppError(404, 'Wishlist not found')
-      }
       if (error instanceof AppError) throw error
       logger.error('Failed to remove item from wishlist:', error)
       throw new AppError(500, 'Failed to remove item from wishlist')
     }
   }
 
-  async shareWishlist(userId, wishlistId, targetUserId) {
+  async shareWishlist(wishlistId, userId, targetUserId) {
     try {
-      const db = dbClient.client.use('wishlists')
-      const wishlist = await db.get(wishlistId)
-      
+      // Get wishlist to verify it exists and check ownership
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
       if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
       }
@@ -274,6 +260,18 @@ class WishlistService {
         throw new AppError(403, 'Only the owner can share the wishlist')
       }
 
+      // Validate targetUserId
+      if (!targetUserId || typeof targetUserId !== 'string') {
+        throw new AppError(400, 'Invalid target user ID')
+      }
+
+      // Check if user exists
+      const targetUser = await dbClient.getDocument('users', targetUserId)
+      if (!targetUser) {
+        throw new AppError(404, 'Target user not found')
+      }
+
+      // Check if already shared
       if (wishlist.sharedWith.includes(targetUserId)) {
         throw new AppError(400, 'Wishlist already shared with this user')
       }
@@ -282,25 +280,13 @@ class WishlistService {
       wishlist.sharedWith.push(targetUserId)
       wishlist.updatedAt = new Date().toISOString()
 
-      try {
-        const response = await db.insert(wishlist)
-        return {
-          ...wishlist,
-          _rev: response.rev
-        }
-      } catch (dbError) {
-        logger.error('Database error details:', {
-          error: dbError,
-          wishlistId,
-          targetUserId,
-          document: wishlist
-        })
-        throw new AppError(500, 'Database operation failed')
+      // Update wishlist
+      const result = await dbClient.updateDocument('wishlists', wishlistId, wishlist)
+      return {
+        ...wishlist,
+        _rev: result.rev
       }
     } catch (error) {
-      if (error.statusCode === 404) {
-        throw new AppError(404, 'Wishlist not found')
-      }
       if (error instanceof AppError) throw error
       logger.error('Failed to share wishlist:', error)
       throw new AppError(500, 'Failed to share wishlist')

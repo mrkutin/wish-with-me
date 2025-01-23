@@ -2,7 +2,8 @@ const express = require('express')
 const router = express.Router()
 const userService = require('./user.service')
 const authMiddleware = require('../../middleware/auth')
-const { validateUpdateProfile } = require('./user.validation')
+const { validateUpdateProfile, validateUser } = require('./user.validation')
+const { AppError } = require('../../middleware/error-handler')
 
 router.use(authMiddleware) // Protect all user routes
 
@@ -77,7 +78,15 @@ router.get('/', async (req, res, next) => {
  */
 router.delete('/:id', async (req, res, next) => {
   try {
-    await userService.deleteUser(req.params.id)
+    const userIdToDelete = req.params.id
+    const requestingUserId = req.user.userId
+
+    // Only allow users to delete their own accounts
+    if (userIdToDelete !== requestingUserId) {
+      throw new AppError(403, 'Not authorized to delete other users')
+    }
+
+    await userService.deleteUser(userIdToDelete)
     res.status(204).send()
   } catch (error) {
     next(error)
@@ -120,6 +129,21 @@ router.patch('/me', validateUpdateProfile, async (req, res, next) => {
     const userId = req.user.userId
     const updatedUser = await userService.updateProfile(userId, req.body)
     res.json(updatedUser)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/', validateUser, async (req, res, next) => {
+  try {
+    const user = await userService.createUser(req.body)
+    
+    // For testing purposes, if this is a second user, store as targetUserId
+    if (req.get('X-Store-Target-User') === 'true') {
+      res.set('X-Target-User-Id', user._id)
+    }
+    
+    res.status(201).json(user)
   } catch (error) {
     next(error)
   }

@@ -25,7 +25,6 @@ class DatabaseClient {
       const usersDb = config.get('couchdb.databases.users')
       if (!dbList.includes(usersDb)) {
         await this.client.db.create(usersDb)
-        logger.info(`Database ${usersDb} created`)
       }
       this.databases.users = this.client.use(usersDb)
 
@@ -33,7 +32,6 @@ class DatabaseClient {
       const wishlistsDb = config.get('couchdb.databases.wishlists')
       if (!dbList.includes(wishlistsDb)) {
         await this.client.db.create(wishlistsDb)
-        logger.info(`Database ${wishlistsDb} created`)
       }
       this.databases.wishlists = this.client.use(wishlistsDb)
 
@@ -41,11 +39,9 @@ class DatabaseClient {
       const cartsDb = config.get('couchdb.databases.carts')
       if (!dbList.includes(cartsDb)) {
         await this.client.db.create(cartsDb)
-        logger.info(`Database ${cartsDb} created`)
       }
       this.databases.carts = this.client.use(cartsDb)
 
-      logger.info('All databases initialized')
     } catch (error) {
       logger.error('Failed to initialize databases:', error)
       throw error
@@ -62,15 +58,20 @@ class DatabaseClient {
     }
   }
 
-  async getDocument(database, id) {
+  async getDocument(dbName, id) {
     try {
-      const doc = await this.databases[database].get(id)
+      // Make sure we have the database
+      if (!this.databases[dbName]) {
+        throw new Error(`Database ${dbName} not found`)
+      }
+
+      const db = this.client.use(dbName)
+      const doc = await db.get(id)
       return doc
     } catch (error) {
       if (error.statusCode === 404) {
         return null
       }
-      logger.error(`Failed to get document from ${database}:`, error)
       throw error
     }
   }
@@ -107,6 +108,25 @@ class DatabaseClient {
         return null
       }
       logger.error(`Failed to destroy document in ${database}:`, error)
+      throw error
+    }
+  }
+
+  async updateDocument(dbName, id, doc) {
+    try {
+      // Make sure we have the database
+      if (!this.databases[dbName]) {
+        throw new Error(`Database ${dbName} not found`)
+      }
+
+      // Make sure doc has _id and _rev
+      if (!doc._id || !doc._rev) {
+        throw new Error('Document must have _id and _rev')
+      }
+
+      const result = await this.databases[dbName].insert(doc)
+      return result
+    } catch (error) {
       throw error
     }
   }
