@@ -17,6 +17,7 @@ const wishlistRouter = require('./components/wishlists/wishlist.controller')
 const cartRouter = require('./components/shopping/cart.controller')
 const notificationRouter = require('./components/notifications/notification.controller')
 const userRouter = require('./components/users/user.controller')
+const browserService = require('./services/browser.service')
 
 const app = express()
 
@@ -73,11 +74,24 @@ app.use(errorHandler)
 const start = async () => {
   try {
     await dbClient.init()
+    await browserService.initialize()
     
     const port = config.get('port')
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
       logger.info(`Server is running on port ${port}`)
     })
+
+    // Cleanup on server shutdown
+    const cleanup = async () => {
+      logger.info('Server shutting down...')
+      await browserService.cleanup()
+      server.close()
+      process.exit(0)
+    }
+
+    process.on('SIGTERM', cleanup)
+    process.on('SIGINT', cleanup)
+
   } catch (error) {
     logger.error('Failed to start server:', error)
     process.exit(1)

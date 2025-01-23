@@ -1,7 +1,7 @@
 const dbClient = require('../../db/client')
 const { AppError } = require('../../middleware/error-handler')
 const logger = require('../../utils/logger')
-const puppeteer = require('puppeteer')
+const browserService = require('../../services/browser.service')
 
 class WishlistService {
   async createWishlist(userId, data) {
@@ -134,7 +134,7 @@ class WishlistService {
   }
 
   async extractNameFromUrl(url) {
-    let browser = null
+    let page = null
     try {
       if (!url) {
         logger.error('No URL provided')
@@ -143,29 +143,12 @@ class WishlistService {
 
       logger.debug('Starting extraction process', { url })
 
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-web-security',
-          '--disable-features=IsolateOrigins',
-          '--disable-site-isolation-trials',
-          '--disable-features=BlockInsecurePrivateNetworkRequests',
-          '--disable-blink-features=AutomationControlled',
-          '--window-size=1920x1080',
-          '--start-maximized'
-        ],
-        ignoreHTTPSErrors: true,
-        defaultViewport: null
-      })
+      page = await browserService.getPage()
 
-      logger.debug('Browser launched successfully')
-
-      const page = await browser.newPage()
-      logger.debug('New page created')
-
+      // Set up page configuration
+      await page.setViewport({ width: 1920, height: 1080 })
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36')
+      
       // Enable request logging
       page.on('request', request => {
         logger.debug('Outgoing request:', {
@@ -250,9 +233,6 @@ class WishlistService {
         'Upgrade-Insecure-Requests': '1'
       })
       logger.debug('Headers set')
-
-      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36')
-      logger.debug('User agent set')
 
       await page.setJavaScriptEnabled(true)
       logger.debug('JavaScript enabled')
@@ -422,10 +402,9 @@ class WishlistService {
       })
       return null
     } finally {
-      if (browser) {
-        logger.debug('Closing browser')
-        await browser.close().catch(error => {
-          logger.error('Error closing browser:', {
+      if (page) {
+        await page.close().catch(error => {
+          logger.error('Error closing page:', {
             error: error.message
           })
         })
@@ -449,9 +428,7 @@ class WishlistService {
 
       // If only URL is provided, try to extract name
       if (itemData.url && !itemData.name) {
-        const extractedName = await this.extractNameFromUrl(itemData.url)
-        
-
+        const extractedName = await browserService.extractNameFromUrl(itemData.url)
         if (extractedName) {
           itemData.name = extractedName
           logger.debug('Using extracted name:', { name: itemData.name })
@@ -680,7 +657,7 @@ class WishlistService {
 
       // If URL is being updated and name is not provided, try to extract name
       if (updateData.url && !updateData.name && updateData.url !== item.url) {
-        const extractedName = await this.extractNameFromUrl(updateData.url)
+        const extractedName = await browserService.extractNameFromUrl(updateData.url)
         if (extractedName) {
           updateData.name = extractedName
           logger.debug('Using extracted name:', { name: updateData.name })
