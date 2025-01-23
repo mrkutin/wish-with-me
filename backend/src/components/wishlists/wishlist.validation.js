@@ -18,8 +18,8 @@ const validateItem = (req, res, next) => {
   const { name, url } = req.body
 
   // Check that exactly one of name or url is provided
-  const hasName = name !== undefined && name !== null
-  const hasUrl = url !== undefined && url !== null
+  const hasName = name !== undefined && name !== null && name !== ''
+  const hasUrl = url !== undefined && url !== null && url !== ''
 
   if (hasName && hasUrl) {
     return next(new AppError(400, 'Provide either name or url, not both'))
