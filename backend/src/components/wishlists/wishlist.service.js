@@ -1,6 +1,7 @@
 const dbClient = require('../../db/client')
 const { AppError } = require('../../middleware/error-handler')
 const logger = require('../../utils/logger')
+const puppeteer = require('puppeteer')
 
 class WishlistService {
   async createWishlist(userId, data) {
@@ -132,78 +133,390 @@ class WishlistService {
     }
   }
 
+  async extractNameFromUrl(url) {
+    let browser = null
+    try {
+      if (!url) {
+        logger.error('No URL provided')
+        return null
+      }
+
+      logger.debug('Starting extraction process', { url })
+
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--disable-features=IsolateOrigins',
+          '--disable-site-isolation-trials',
+          '--disable-features=BlockInsecurePrivateNetworkRequests',
+          '--disable-blink-features=AutomationControlled',
+          '--window-size=1920x1080',
+          '--start-maximized'
+        ],
+        ignoreHTTPSErrors: true,
+        defaultViewport: null
+      })
+
+      logger.debug('Browser launched successfully')
+
+      const page = await browser.newPage()
+      logger.debug('New page created')
+
+      // Enable request logging
+      page.on('request', request => {
+        logger.debug('Outgoing request:', {
+          url: request.url(),
+          method: request.method(),
+          headers: request.headers(),
+          resourceType: request.resourceType()
+        })
+      })
+
+      page.on('response', response => {
+        logger.debug('Received response:', {
+          url: response.url(),
+          status: response.status(),
+          headers: response.headers()
+        })
+      })
+
+      // Log console messages from the page
+      page.on('console', msg => {
+        logger.debug('Browser console:', {
+          type: msg.type(),
+          text: msg.text()
+        })
+      })
+
+      // Log errors from the page
+      page.on('pageerror', error => {
+        logger.debug('Page error:', {
+          message: error.message,
+          stack: error.stack
+        })
+      })
+
+      await page.evaluateOnNewDocument(() => {
+        // Overwrite the 'navigator.webdriver' property
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined
+        })
+
+        // Add modern browser features
+        window.chrome = {
+          runtime: {},
+          loadTimes: function() {},
+          csi: function() {},
+          app: {}
+        }
+
+        // Add language and platform info
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en', 'ru']
+        })
+
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [
+            {
+              0: {
+                type: "application/x-google-chrome-pdf",
+                suffixes: "pdf",
+                description: "Portable Document Format"
+              },
+              name: "Chrome PDF Plugin"
+            }
+          ]
+        })
+      })
+      logger.debug('Browser fingerprinting applied')
+
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Ch-Ua': '"Google Chrome";v="119", "Chromium";v="119", "Not?A_Brand";v="24"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
+      })
+      logger.debug('Headers set')
+
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36')
+      logger.debug('User agent set')
+
+      await page.setJavaScriptEnabled(true)
+      logger.debug('JavaScript enabled')
+
+      const domain = new URL(url).hostname
+      await page.setCookie({
+        name: 'session-check',
+        value: '1',
+        domain
+      })
+      logger.debug('Cookie set for domain:', { domain })
+
+      logger.debug('Starting page navigation')
+      const response = await page.goto(url, {
+        waitUntil: ['domcontentloaded', 'networkidle0'],
+        timeout: 30000
+      })
+      logger.debug('Navigation complete', {
+        status: response.status(),
+        headers: response.headers()
+      })
+
+      const finalUrl = page.url()
+      logger.debug('Final URL after redirects:', { 
+        originalUrl: url,
+        finalUrl,
+        redirected: url !== finalUrl
+      })
+
+      // Get page content for debugging
+      const content = await page.content()
+      logger.debug('Page content length:', { 
+        length: content.length,
+        preview: content.substring(0, 500) // First 500 chars
+      })
+
+      logger.debug('Waiting for selectors')
+      await Promise.race([
+        page.waitForSelector('h1').then(() => logger.debug('Found h1')),
+        page.waitForSelector('meta[property="og:title"]').then(() => logger.debug('Found og:title')),
+        page.waitForSelector('[data-widget="webProductHeading"]').then(() => logger.debug('Found product heading')),
+        new Promise(resolve => setTimeout(resolve, 5000)).then(() => logger.debug('Timeout reached'))
+      ])
+
+      const productName = await page.evaluate(() => {
+        function logElement(selector, element) {
+          console.log(`Found element for selector "${selector}":`, {
+            text: element?.textContent,
+            html: element?.outerHTML
+          })
+        }
+
+        function cleanText(text) {
+          return text
+            .replace(/\s+/g, ' ')
+            .trim()
+            .replace(/[|•\-–—].*$/, '')
+            .replace(/купить.*$/i, '')
+            .replace(/buy.*$/i, '')
+            .replace(/в интернет.*$/i, '')
+            .trim()
+        }
+
+        // Try JSON-LD first
+        const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]')
+        console.log('Found JSON-LD elements:', jsonLdElements.length)
+        for (const element of jsonLdElements) {
+          try {
+            const data = JSON.parse(element.textContent)
+            if (data['@type'] === 'Product' && data.name) {
+              return cleanText(data.name)
+            }
+            // Handle array of products
+            if (Array.isArray(data)) {
+              const product = data.find(item => item['@type'] === 'Product')
+              if (product?.name) {
+                return cleanText(product.name)
+              }
+            }
+          } catch (e) {}
+        }
+
+        // Try meta tags
+        const metaSelectors = [
+          'meta[property="og:title"]',
+          'meta[name="title"]',
+          'meta[property="product:title"]'
+        ]
+        for (const selector of metaSelectors) {
+          const meta = document.querySelector(selector)
+          if (meta?.content) {
+            return cleanText(meta.content)
+          }
+        }
+
+        // Try Ozon-specific selectors
+        const ozonSelectors = [
+          '[data-widget="webProductHeading"]',
+          '.rk4 h1',
+          '[data-widget="paginator"] h1',
+          '[data-widget="column"] h1'
+        ]
+        for (const selector of ozonSelectors) {
+          const element = document.querySelector(selector)
+          if (element?.textContent) {
+            return cleanText(element.textContent)
+          }
+        }
+
+        // Try common selectors
+        const commonSelectors = [
+          'h1[itemprop="name"]',
+          '[data-auto="productName"]',
+          '.product-name',
+          '.product-title',
+          'h1'
+        ]
+        for (const selector of commonSelectors) {
+          const element = document.querySelector(selector)
+          if (element?.textContent) {
+            return cleanText(element.textContent)
+          }
+        }
+
+        // Fallback to title
+        return document.title ? cleanText(document.title) : null
+      })
+
+      logger.debug('Name extraction complete', { 
+        found: !!productName,
+        productName 
+      })
+
+      if (productName) {
+        logger.info('Successfully extracted name:', { url, name: productName })
+        return productName
+      }
+
+      // URL fallback
+      const urlPath = new URL(url).pathname
+      const lastSegment = urlPath.split('/').filter(Boolean).pop()
+      logger.debug('Attempting URL fallback', { 
+        urlPath,
+        lastSegment 
+      })
+
+      if (lastSegment) {
+        const nameFromUrl = lastSegment
+          .replace(/-/g, ' ')
+          .replace(/\d+$/, '')
+          .trim()
+        logger.info('Extracted name from URL:', { url, name: nameFromUrl })
+        return nameFromUrl
+      }
+
+      logger.warn('All extraction methods failed')
+      return null
+
+    } catch (error) {
+      logger.error('Failed to extract name from URL:', {
+        url,
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        }
+      })
+      return null
+    } finally {
+      if (browser) {
+        logger.debug('Closing browser')
+        await browser.close().catch(error => {
+          logger.error('Error closing browser:', {
+            error: error.message
+          })
+        })
+      }
+    }
+  }
+
   async addItem(wishlistId, userId, itemData) {
     try {
-      console.log('DEBUG - addItem called with:', { wishlistId, userId, itemData });
-
-      // Get wishlist to verify it exists and user owns it
-      console.log('DEBUG - About to get wishlist document');
-      const wishlist = await dbClient.getDocument('wishlists', wishlistId);
-      console.log('DEBUG - Wishlist document retrieved:', wishlist);
-
+      // Get wishlist to verify it exists and check ownership
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
       if (!wishlist) {
-        console.log('DEBUG - Wishlist not found:', wishlistId);
-        throw new AppError(404, 'Wishlist not found');
+        throw new AppError(404, 'Wishlist not found')
       }
 
       if (wishlist.userId !== userId) {
-        console.log('DEBUG - Unauthorized access:', { wishlistUserId: wishlist.userId, requestingUserId: userId });
-        throw new AppError(403, 'Not authorized to modify this wishlist');
+        throw new AppError(403, 'Not authorized to modify this wishlist')
       }
 
-      // Validate item data
-      if (!itemData.name && !itemData.url) {
-        throw new AppError(400, 'Either name or URL is required')
-      }
-      if (itemData.name && itemData.url) {
-        throw new AppError(400, 'Cannot provide both name and URL')
+      logger.debug('Adding item to wishlist:', { wishlistId, itemData })
+
+      // If only URL is provided, try to extract name
+      if (itemData.url && !itemData.name) {
+        const extractedName = await this.extractNameFromUrl(itemData.url)
+        
+
+        if (extractedName) {
+          itemData.name = extractedName
+          logger.debug('Using extracted name:', { name: itemData.name })
+        }
       }
 
-      // Initialize items array if it doesn't exist
-      wishlist.items = wishlist.items || [];
-
-      // Check for existing item
+      // Find existing item by URL or name
       const existingItem = wishlist.items.find(item => 
-        (itemData.name && item.name === itemData.name) || 
-        (itemData.url && item.url === itemData.url)
-      );
+        (itemData.url && item.url === itemData.url) || 
+        (itemData.name && item.name === itemData.name)
+      )
 
-      let updatedItem;
+      let updatedItem
       if (existingItem) {
+        logger.debug('Found existing item, updating quantity:', { 
+          existingItem 
+        })
         // Increment quantity of existing item
-        existingItem.quantity += 1;
-        existingItem.updatedAt = new Date().toISOString();
-        updatedItem = existingItem;
+        existingItem.quantity += 1
+        // Update name if provided
+        if (itemData.name) {
+          existingItem.name = itemData.name
+        }
+        // Update the timestamp
+        existingItem.updatedAt = new Date().toISOString()
+        updatedItem = existingItem
       } else {
         // Create new item
         updatedItem = {
           _id: await dbClient.getUUID(),
           wishlistId,
+          name: itemData.name,
+          url: itemData.url,
           quantity: 1,
           addedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        };
-
-        // Add only the provided attribute (name or url)
-        if (itemData.name) {
-          updatedItem.name = itemData.name;
-        } else if (itemData.url) {
-          updatedItem.url = itemData.url;
         }
+        logger.debug('Creating new item:', { updatedItem })
 
         // Add new item to wishlist
-        wishlist.items.push(updatedItem);
+        wishlist.items.push(updatedItem)
       }
 
       // Update wishlist in database
-      wishlist.updatedAt = new Date().toISOString();
-      await dbClient.updateDocument('wishlists', wishlistId, wishlist);
+      wishlist.updatedAt = new Date().toISOString()
+      await dbClient.updateDocument('wishlists', wishlistId, wishlist)
 
-      return updatedItem;
+      logger.info('Item added successfully:', { 
+        wishlistId, 
+        itemId: updatedItem._id,
+        name: updatedItem.name 
+      })
+
+      return updatedItem
     } catch (error) {
-      if (error instanceof AppError) throw error;
-      logger.error('Failed to add item to wishlist:', error);
-      throw new AppError(500, 'Failed to add item to wishlist');
+      if (error instanceof AppError) throw error
+      logger.error('Failed to add item to wishlist:', {
+        wishlistId,
+        itemData,
+        error: {
+          message: error.message,
+          stack: error.stack
+        }
+      })
+      throw new AppError(500, 'Failed to add item to wishlist')
     }
   }
 
@@ -337,6 +650,74 @@ class WishlistService {
       if (error instanceof AppError) throw error
       logger.error('Failed to unshare wishlist:', error)
       throw new AppError(500, 'Failed to unshare wishlist')
+    }
+  }
+
+  async updateItem(wishlistId, userId, itemId, updateData) {
+    try {
+      // Get wishlist to verify it exists and check ownership
+      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
+
+      if (wishlist.userId !== userId) {
+        throw new AppError(403, 'Not authorized to modify this wishlist')
+      }
+
+      // Find the item
+      const item = wishlist.items.find(item => item._id === itemId)
+      if (!item) {
+        throw new AppError(404, 'Item not found')
+      }
+
+      logger.debug('Updating item:', { 
+        wishlistId, 
+        itemId, 
+        currentItem: item,
+        updateData 
+      })
+
+      // If URL is being updated and name is not provided, try to extract name
+      if (updateData.url && !updateData.name && updateData.url !== item.url) {
+        const extractedName = await this.extractNameFromUrl(updateData.url)
+        if (extractedName) {
+          updateData.name = extractedName
+          logger.debug('Using extracted name:', { name: updateData.name })
+        }
+      }
+
+      // Update item fields
+      if (updateData.name) item.name = updateData.name
+      if (updateData.url) item.url = updateData.url
+      if (updateData.quantity) item.quantity = updateData.quantity
+
+      // Update timestamp
+      item.updatedAt = new Date().toISOString()
+      wishlist.updatedAt = new Date().toISOString()
+
+      // Update wishlist in database
+      await dbClient.updateDocument('wishlists', wishlistId, wishlist)
+
+      logger.info('Item updated successfully:', {
+        wishlistId,
+        itemId: item._id,
+        name: item.name
+      })
+
+      return item
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      logger.error('Failed to update item in wishlist:', {
+        wishlistId,
+        itemId,
+        updateData,
+        error: {
+          message: error.message,
+          stack: error.stack
+        }
+      })
+      throw new AppError(500, 'Failed to update item in wishlist')
     }
   }
 }

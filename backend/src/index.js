@@ -30,7 +30,15 @@ app.use(rateLimit({
 }))
 
 // Logging middleware
-app.use(pinoHttp({ logger }))
+app.use(pinoHttp({
+  logger,
+  autoLogging: false,
+  customLogLevel: function (req, res, err) {
+    if (res.statusCode >= 400 && res.statusCode < 500) return 'warn'
+    if (res.statusCode >= 500 || err) return 'error'
+    return 'silent'
+  }
+}))
 
 // Body parsing middleware
 app.use(express.json({ limit: '10kb' }))

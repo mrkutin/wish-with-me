@@ -1,9 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const wishlistService = require('./wishlist.service')
-const { validateWishlist, validateItem } = require('./wishlist.validation')
+const { validateWishlist, validateItem, updateItemSchema } = require('./wishlist.validation')
 const { AppError } = require('../../middleware/error-handler')
 const authMiddleware = require('../../middleware/auth')
+const { validationResult } = require('express-validator')
 
 router.use(authMiddleware) // Protect all wishlist routes
 
@@ -231,12 +232,6 @@ router.post('/:id/items', validateItem, async (req, res, next) => {
   try {
     const wishlistId = req.params.id;  // This is the wishlist ID from URL
     const userId = req.user.userId;     // This is the user ID from token
-    
-    console.log('DEBUG - Controller adding item:', {
-      wishlistId,
-      userId,
-      body: req.body
-    });
 
     const item = await wishlistService.addItem(wishlistId, userId, req.body);
     res.status(201).json(item);
@@ -271,6 +266,63 @@ router.delete('/:id/items/:itemId', async (req, res, next) => {
 
     await wishlistService.removeItem(wishlistId, userId, itemId)
     res.status(204).send()
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * @swagger
+ * /wishlists/{id}/items/{itemId}:
+ *   patch:
+ *     summary: Update an item in wishlist
+ *     tags: [Wishlists]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               url:
+ *                 type: string
+ *               quantity:
+ *                 type: integer
+ *                 minimum: 1
+ */
+router.patch('/:id/items/:itemId', updateItemSchema, async (req, res, next) => {
+  try {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      throw new AppError(400, 'Validation error', errors.array())
+    }
+
+    const wishlistId = req.params.id
+    const itemId = req.params.itemId
+    const userId = req.user.userId
+    const updateData = req.body
+
+    const updatedItem = await wishlistService.updateItem(
+      wishlistId,
+      userId,
+      itemId,
+      updateData
+    )
+
+    res.json(updatedItem)
   } catch (error) {
     next(error)
   }

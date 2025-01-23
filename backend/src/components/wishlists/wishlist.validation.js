@@ -1,4 +1,5 @@
 const { AppError } = require('../../middleware/error-handler')
+const { param, body } = require('express-validator')
 
 const validateWishlist = (req, res, next) => {
   const { name, description } = req.body
@@ -55,7 +56,16 @@ const validateItem = (req, res, next) => {
   next()
 }
 
+const updateItemSchema = [
+  param('id').isString().notEmpty().withMessage('Wishlist ID is required'),
+  param('itemId').isString().notEmpty().withMessage('Item ID is required'),
+  body('name').optional().isString().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('url').optional().isURL().withMessage('Invalid URL format'),
+  body('quantity').optional().isInt({ min: 1 }).withMessage('Quantity must be at least 1')
+]
+
 module.exports = {
   validateWishlist,
-  validateItem
+  validateItem,
+  updateItemSchema
 } 

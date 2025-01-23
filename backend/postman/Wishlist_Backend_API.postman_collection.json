@@ -552,9 +552,9 @@
         },
         {
           "name": "Get All Users - Unauthorized",
-          "request": {
-            "method": "GET",
-            "header": [],
+      "request": {
+        "method": "GET",
+        "header": [],
             "url": {
               "raw": "{{baseUrl}}/users",
               "host": [
@@ -565,9 +565,9 @@
               ]
             },
             "description": "Try to get users without auth token"
-          },
-          "response": []
-        },
+      },
+      "response": []
+    },
         {
           "name": "Delete User",
           "request": {
@@ -678,8 +678,8 @@
       "name": "Wishlists",
       "description": "",
       "item": [
-        {
-          "name": "Create Wishlist",
+    {
+      "name": "Create Wishlist",
           "event": [
             {
               "listen": "test",
@@ -694,20 +694,20 @@
               }
             }
           ],
-          "request": {
-            "method": "POST",
-            "header": [
+      "request": {
+        "method": "POST",
+        "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}"
               },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
               "raw": "{\n    \"name\": \"My Wishlist\",\n    \"description\": \"Things I want\"\n}"
             },
             "url": {
@@ -751,8 +751,8 @@
               ]
             },
             "description": "Try to create wishlist with empty name"
-          },
-          "response": []
+      },
+      "response": []
         },
         {
           "name": "Create Wishlist - No Name",
