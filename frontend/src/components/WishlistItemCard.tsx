@@ -10,12 +10,11 @@ interface WishlistItemProps {
     _id: string
     name: string
     url?: string
-    image?: string  // This is the image attribute from backend
-    price: string
-    currency: string
-    quantity: number
-    addedAt: string
-    updatedAt: string
+    image?: string
+    price?: number
+    currency?: string
+    priority?: 'low' | 'medium' | 'high'
+    notes?: string
   }
   onEdit?: () => void
   onDelete?: () => void

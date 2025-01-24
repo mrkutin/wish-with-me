@@ -7,8 +7,12 @@ interface AddItemModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: {
-    name?: string
+    name: string
     url?: string
+    price?: number
+    currency?: string
+    priority?: 'low' | 'medium' | 'high'
+    notes?: string
   }) => Promise<void>
 }
 
