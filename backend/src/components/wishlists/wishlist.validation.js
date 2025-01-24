@@ -16,32 +16,17 @@ const validateWishlist = (req, res, next) => {
 }
 
 const validateItem = (req, res, next) => {
-  const { name, url } = req.body
+  const { name, url, price, currency } = req.body
 
-  // Check that exactly one of name or url is provided
-  const hasName = name !== undefined && name !== null && name !== ''
-  const hasUrl = url !== undefined && url !== null && url !== ''
-
-  if (hasName && hasUrl) {
-    return next(new AppError(400, 'Provide either name or url, not both'))
+  if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    return next(new AppError(400, 'Name is required'))
   }
 
-  if (!hasName && !hasUrl) {
-    return next(new AppError(400, 'Provide either name or url'))
+  if (name.length > 100) {
+    return next(new AppError(400, 'Name must not exceed 100 characters'))
   }
 
-  // Validate name if provided
-  if (hasName) {
-    if (typeof name !== 'string' || name.trim().length === 0) {
-      return next(new AppError(400, 'Name cannot be empty'))
-    }
-    if (name.length > 100) {
-      return next(new AppError(400, 'Name must not exceed 100 characters'))
-    }
-  }
-
-  // Validate URL if provided
-  if (hasUrl) {
+  if (url) {
     if (typeof url !== 'string' || url.trim().length === 0) {
       return next(new AppError(400, 'URL cannot be empty'))
     }
@@ -50,6 +35,22 @@ const validateItem = (req, res, next) => {
     }
     if (url.length > 500) {
       return next(new AppError(400, 'URL must not exceed 500 characters'))
+    }
+  }
+
+  if (price !== undefined) {
+    const numPrice = Number(price)
+    if (isNaN(numPrice) || numPrice < 0) {
+      return next(new AppError(400, 'Price must be a positive number'))
+    }
+  }
+
+  if (currency !== undefined) {
+    if (typeof currency !== 'string' || currency.trim().length === 0) {
+      return next(new AppError(400, 'Currency cannot be empty'))
+    }
+    if (currency.length > 3) {
+      return next(new AppError(400, 'Currency must be a valid 3-letter code'))
     }
   }
 

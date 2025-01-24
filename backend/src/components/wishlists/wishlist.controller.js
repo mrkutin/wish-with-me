@@ -5,6 +5,8 @@ const { validateWishlist, validateItem, updateItemSchema } = require('./wishlist
 const { AppError } = require('../../middleware/error-handler')
 const authMiddleware = require('../../middleware/auth')
 const { validationResult } = require('express-validator')
+const browserService = require('../../services/browser.service')
+const logger = require('../../utils/logger')
 
 router.use(authMiddleware) // Protect all wishlist routes
 
@@ -211,6 +213,67 @@ router.delete('/:id', async (req, res, next) => {
 
 /**
  * @swagger
+ * /wishlists/resolve-item:
+ *   post:
+ *     summary: Resolve item details from URL
+ *     tags: [Wishlists]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - url
+ *             properties:
+ *               url:
+ *                 type: string
+ *                 description: URL of the item to resolve
+ *     responses:
+ *       200:
+ *         description: Item details resolved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 price:
+ *                   type: number
+ *                 currency:
+ *                   type: string
+ *                 image:
+ *                   type: string
+ *       400:
+ *         description: Invalid URL or unsupported marketplace
+ *       500:
+ *         description: Server error
+ */
+router.post('/resolve-item', async (req, res, next) => {
+  try {
+    const { url } = req.body
+    
+    if (!url) {
+      throw new AppError(400, 'URL is required')
+    }
+
+    const itemDetails = await browserService.extractNameFromUrl(url)
+    
+    if (!itemDetails) {
+      throw new AppError(400, 'Could not resolve item details from URL')
+    }
+
+    res.json(itemDetails)
+  } catch (error) {
+    next(error)
+  }
+})
+
+/**
+ * @swagger
  * /wishlists/{id}/items:
  *   post:
  *     summary: Add an item to wishlist
@@ -230,13 +293,45 @@ router.delete('/:id', async (req, res, next) => {
  */
 router.post('/:id/items', validateItem, async (req, res, next) => {
   try {
-    const wishlistId = req.params.id;  // This is the wishlist ID from URL
-    const userId = req.user.userId;     // This is the user ID from token
+    const wishlistId = req.params.id
+    const userId = req.user.userId
+    const { name, url, price, currency, image } = req.body
 
-    const item = await wishlistService.addItem(wishlistId, userId, req.body);
-    res.status(201).json(item);
+    // Log incoming request
+    logger.debug('Adding item to wishlist:', {
+      wishlistId,
+      userId,
+      itemData: { name, url, price, currency }
+    })
+
+    const itemData = {
+      name,
+      url,
+      price,
+      currency,
+      image
+    }
+
+    const item = await wishlistService.addItem(wishlistId, userId, itemData)
+    
+    logger.info('Item added successfully:', {
+      wishlistId,
+      itemId: item._id,
+      name: item.name
+    })
+    
+    res.status(201).json(item)
   } catch (error) {
-    next(error);
+    if (error instanceof AppError) {
+      logger.warn('Failed to add item:', {
+        message: error.message,
+        statusCode: error.statusCode
+      })
+      next(error)
+    } else {
+      logger.error('Unexpected error while adding item:', error)
+      next(new AppError(500, 'An unexpected error occurred'))
+    }
   }
 })
 

@@ -5,9 +5,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cdn1.ozone.ru',
+        hostname: '**',
+        port: '',
         pathname: '/**',
-      },
+      }
     ],
   },
 };

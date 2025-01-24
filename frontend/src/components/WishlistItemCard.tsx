@@ -25,7 +25,17 @@ export default function WishlistItemCard({ item, onEdit, onDelete }: WishlistIte
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
   const showIcon = !item.image || imageError
-  const isOzon = item.url?.includes('ozon.ru')
+  
+  // Determine marketplace
+  const getMarketplace = (url?: string) => {
+    if (!url) return null
+    if (url.includes('ozon.ru')) return { name: 'ozon', color: '#005bff' }
+    if (url.includes('market.yandex')) return { name: 'yandex', color: '#f33' }
+    if (url.includes('wildberries.ru')) return { name: 'wb', color: '#cb11ab' }
+    return null
+  }
+
+  const marketplace = getMarketplace(item.url)
 
   return (
     <>
@@ -81,14 +91,15 @@ export default function WishlistItemCard({ item, onEdit, onDelete }: WishlistIte
                 ) : (
                   <div className="text-text-secondary text-sm">No price set</div>
                 )}
-                {isOzon && (
+                {marketplace && (
                   <a
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-lg font-semibold text-[#005bff] hover:text-[#004edb] flex-shrink-0 ml-2"
+                    className="text-lg font-semibold flex-shrink-0 ml-2 transition-colors"
+                    style={{ color: marketplace.color }}
                   >
-                    ozon
+                    {marketplace.name}
                   </a>
                 )}
               </div>

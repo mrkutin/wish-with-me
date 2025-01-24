@@ -135,8 +135,9 @@ class WishlistService {
 
   async addItem(wishlistId, userId, itemData) {
     try {
-      // Get wishlist to verify it exists and check ownership
+      // First check if wishlist exists and user has access
       const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+      
       if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
       }
@@ -145,93 +146,55 @@ class WishlistService {
         throw new AppError(403, 'Not authorized to modify this wishlist')
       }
 
-      logger.debug(`Adding item to wishlist: ${JSON.stringify({ wishlistId, itemData })}`)
-
-      // If URL is provided, try to extract info
-      if (itemData.url) {
-        const extractedInfo = await browserService.extractNameFromUrl(itemData.url)
-        if (extractedInfo) {
-          if (extractedInfo.name) itemData.name = extractedInfo.name
-          if (extractedInfo.price) itemData.price = extractedInfo.price
-          if (extractedInfo.currency) itemData.currency = extractedInfo.currency
-          if (extractedInfo.image) itemData.image = extractedInfo.image
-          
-          logger.debug(`Using extracted info: ${JSON.stringify({ extractedInfo })}`)
-        }
+      // Validate required fields
+      if (!itemData.name) {
+        throw new AppError(400, 'Item name is required')
       }
 
-      // Find existing item by URL or name
-      const existingItem = wishlist.items.find(item => 
-        (itemData.url && item.url === itemData.url) || 
-        (itemData.name && item.name === itemData.name)
+      // Create new item with validated data
+      const newItem = {
+        _id: await dbClient.getUUID(),
+        name: itemData.name.trim(),
+        url: itemData.url?.trim(),
+        price: itemData.price ? Number(itemData.price) : undefined,
+        currency: itemData.currency?.trim()?.toUpperCase(),
+        image: itemData.image?.trim(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      // Remove undefined fields
+      Object.keys(newItem).forEach(key => 
+        newItem[key] === undefined && delete newItem[key]
       )
 
-      let updatedItem
-      if (existingItem) {
-        logger.debug(`Found existing item, updating quantity: ${JSON.stringify({ existingItem })}`)
-        // Increment quantity of existing item
-        existingItem.quantity += 1
-        // Update name if provided
-        if (itemData.name) {
-          existingItem.name = itemData.name
-        }
-        // Update price if provided
-        if (itemData.price) {
-          existingItem.price = itemData.price
-        }
-        // Update currency if provided
-        if (itemData.currency) {
-          existingItem.currency = itemData.currency
-        }
-        // Update image if provided
-        if (itemData.image) {
-          existingItem.image = itemData.image
-        }
-        // Update the timestamp
-        existingItem.updatedAt = new Date().toISOString()
-        updatedItem = existingItem
-      } else {
-        // Create new item
-        updatedItem = {
-          _id: await dbClient.getUUID(),
-          wishlistId,
-          name: itemData.name,
-          url: itemData.url,
-          price: itemData.price || null,
-          currency: itemData.currency || null,
-          image: itemData.image || null,
-          quantity: 1,
-          addedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-        logger.debug(`Creating new item: ${JSON.stringify({ updatedItem })}`)
+      wishlist.items.push(newItem)
+      wishlist.updatedAt = new Date().toISOString()
 
-        // Add new item to wishlist
-        wishlist.items.push(updatedItem)
+      try {
+        await dbClient.updateDocument('wishlists', wishlistId, wishlist)
+        return newItem
+      } catch (dbError) {
+        logger.error('Database error while adding item:', {
+          error: dbError,
+          wishlistId,
+          userId
+        })
+        throw new AppError(500, 'Failed to save item to database')
       }
 
-      // Update wishlist in database
-      wishlist.updatedAt = new Date().toISOString()
-      await dbClient.updateDocument('wishlists', wishlistId, wishlist)
-
-      logger.info(`Item added successfully: ${JSON.stringify({ 
-        wishlistId, 
-        itemId: updatedItem._id,
-        name: updatedItem.name 
-      })}`)
-
-      return updatedItem
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error(`Failed to add item to wishlist: ${JSON.stringify({
+      
+      logger.error('Failed to add item to wishlist:', {
         wishlistId,
-        itemData,
-        error: {
-          message: error.message,
-          stack: error.stack
-        }
-      })}`)
-      throw new AppError(500, 'Failed to add item to wishlist')
+        userId,
+        error: error.message,
+        stack: error.stack,
+        itemData: JSON.stringify(itemData)
+      })
+      
+      throw new AppError(500, 'An unexpected error occurred while adding the item')
     }
   }
 

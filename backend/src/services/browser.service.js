@@ -3,6 +3,58 @@ const logger = require('../utils/logger')
 
 let browser = null
 
+const marketplaces = {
+  OZON: {
+    domain: 'ozon.ru',
+    selectors: {
+      name: 'h1[data-widget="webProductHeading"], h1',
+      price: '[data-widget="webPrice"] span',
+      image: 'img[src*="cdn"][src*="product"], img[data-index="0"]'
+    },
+    parse: (document, { cleanText, extractPrice }) => ({
+      name: cleanText(document.querySelector('h1[data-widget="webProductHeading"], h1')?.textContent || ''),
+      price: extractPrice(document.querySelector('[data-widget="webPrice"]')?.textContent || ''),
+      currency: 'RUB',
+      image: document.querySelector('img[src*="cdn"][src*="product"]')?.src ||
+             document.querySelector('img[data-index="0"]')?.src
+    })
+  },
+  WILDBERRIES: {
+    domain: 'wildberries.ru',
+    selectors: {
+      name: '.product-page__header h1',
+      price: '.price-block__final-price',
+      image: '.slide__content img, .photo-zoom__preview'
+    },
+    parse: (document, { cleanText, extractPrice }) => ({
+      name: cleanText(document.querySelector('.product-page__header h1')?.textContent || ''),
+      price: extractPrice(document.querySelector('.price-block__final-price')?.textContent || ''),
+      currency: 'RUB',
+      image: document.querySelector('.slide__content img')?.src ||
+             document.querySelector('.photo-zoom__preview')?.src
+    })
+  },
+  YANDEX_MARKET: {
+    domain: 'market.yandex.ru',
+    selectors: {
+      name: 'h1._3TfWusA7bt, h1',
+      price: 'span[data-auto="price-value"], ._3nw6gx8TZy',
+      image: 'img._3Wp5KMHYn1, img[src*="market"], .image_type_center img'
+    },
+    cookies: [
+      { name: 'yandex_login', value: '', domain: '.yandex.ru' },
+      { name: 'yandexmarket', value: '1', domain: '.market.yandex.ru' },
+      { name: '_ym_uid', value: Date.now().toString(), domain: '.market.yandex.ru' }
+    ],
+    parse: (document, { cleanText, extractPrice }) => ({
+      name: cleanText(document.querySelector('h1._3TfWusA7bt, h1')?.textContent || ''),
+      price: extractPrice(document.querySelector('span[data-auto="price-value"], ._3nw6gx8TZy')?.textContent || ''),
+      currency: 'RUB',
+      image: document.querySelector('img._3Wp5KMHYn1, img[src*="market"], .image_type_center img')?.src
+    })
+  }
+}
+
 async function initialize() {
   try {
     logger.info(`Initializing headless browser...`)
@@ -91,35 +143,65 @@ async function setPageHeaders(page) {
 
 async function configurePage(page) {
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36')
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
   
   await setupPageLogging(page)
   await applyBotEvasion(page)
   await setPageHeaders(page)
   await page.setJavaScriptEnabled(true)
+  
+  // Additional evasion for Yandex Market
+  await page.evaluateOnNewDocument(() => {
+    // Override permissions API
+    const originalQuery = window.navigator.permissions.query
+    window.navigator.permissions.query = (parameters) => (
+      parameters.name === 'notifications' ?
+        Promise.resolve({ state: Notification.permission }) :
+        originalQuery(parameters)
+    )
+    
+    // Add missing properties
+    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 })
+    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 })
+  })
 }
 
 async function navigateToUrl(page, url) {
   const domain = new URL(url).hostname
   await page.setCookie({ name: 'session-check', value: '1', domain })
   
+  const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
+  
+  if (marketplace?.cookies) {
+    await page.setCookie(...marketplace.cookies)
+  }
+  
   const response = await page.goto(url, {
-    waitUntil: ['domcontentloaded', 'networkidle0'],
+    waitUntil: marketplace?.domain === 'market.yandex.ru' ? 'domcontentloaded' : ['domcontentloaded', 'networkidle0'],
     timeout: 30000
   })
 
-  await Promise.race([
-    page.waitForSelector('h1'),
-    page.waitForSelector('meta[property="og:title"]'),
-    page.waitForSelector('[data-widget="webProductHeading"]'),
-    new Promise(resolve => setTimeout(resolve, 5000))
-  ])
+  if (marketplace) {
+    try {
+      await page.waitForSelector(Object.values(marketplace.selectors).join(', '), { timeout: 5000 })
+    } catch (e) {
+      // If specific selectors not found, wait for any content
+      await page.waitForSelector('h1, .price', { timeout: 5000 })
+    }
+  } else {
+    await Promise.race([
+      page.waitForSelector('h1'),
+      page.waitForSelector('meta[property="og:title"]'),
+      page.waitForSelector('[data-widget="webProductHeading"]'),
+      new Promise(resolve => setTimeout(resolve, 5000))
+    ])
+  }
 
   return response
 }
 
 async function extractProductInfo(page) {
-  return await page.evaluate(() => {
+  return await page.evaluate((marketplaces) => {
     const cleanText = text => text
       .replace(/\s+/g, ' ')
       .trim()
@@ -133,6 +215,10 @@ async function extractProductInfo(page) {
       const numbers = text.replace(/[^\d.,]/g, '')
       return numbers ? parseFloat(numbers.replace(',', '.')) : null
     }
+
+    const url = window.location.href
+    const marketplace = Object.values(marketplaces)
+      .find(m => url.includes(m.domain))
 
     const strategies = [
       // JSON-LD
@@ -163,7 +249,11 @@ async function extractProductInfo(page) {
           } catch (e) {}
         }
       },
-      // Meta tags
+
+      // Marketplace-specific parser
+      () => marketplace?.parse(document, { cleanText, extractPrice }),
+
+      // Generic meta tags (fallback)
       () => {
         const result = {}
         const metaTitleSelectors = ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]']
@@ -210,40 +300,52 @@ async function extractProductInfo(page) {
 
         return Object.keys(result).length ? result : null
       },
-      // Common selectors
+
+      // Generic selectors (last resort)
       () => {
         const result = {}
+        
+        // Marketplace-specific name selectors
         const nameSelectors = [
-          '[data-widget="webProductHeading"]',
-          '.rk4 h1',
+          // Ozon
+          'h1[data-widget="webProductHeading"]',
+          // Wildberries
+          '.product-page__header h1',
+          // Yandex.Market
+          'h1._3TfWusA7bt',
+          // Generic
           'h1[itemprop="name"]',
-          '[data-auto="productName"]',
-          '.product-name',
           '.product-title',
-          'h1'
+          '.product-name'
         ]
+
+        // Marketplace-specific price selectors
         const priceSelectors = [
-          '[itemprop="price"]',
-          '.price-value',
-          '.product-price',
-          '[data-auto="price"]',
-          '[data-widget="price"]',
-          '.rk5'
+          // Ozon
+          '[data-widget="webPrice"] span',
+          // Wildberries
+          '.price-block__final-price',
+          // Yandex.Market
+          'span[data-auto="price-value"]',
+          // Generic
+          '.price',
+          '[itemprop="price"]'
         ]
+
+        // Marketplace-specific image selectors
         const imageSelectors = [
-          // Ozon selectors
+          // Ozon
           'img[src*="cdn"][src*="product"]',
           'img[data-index="0"]',
-          // Common selectors
+          // Wildberries
+          '.slide__content img',
+          '.photo-zoom__preview',
+          // Yandex.Market
+          'img._3Wp5KMHYn1',
+          '.image_type_center img',
+          // Generic fallbacks
           'img[itemprop="image"]',
-          '.product-image img[src*="product"]',
-          '.gallery__main-image img',
-          '.product-gallery__image img',
-          // Fallback selectors
-          '[data-widget="webGallery"] img',
-          '.product-image img',
-          '.gallery-image',
-          '.main-image'
+          '.product-image img'
         ]
 
         for (const selector of nameSelectors) {
@@ -287,7 +389,7 @@ async function extractProductInfo(page) {
       if (result && Object.keys(result).length) return result
       return strategy() || {}
     }, null)
-  })
+  }, marketplaces)
 }
 
 function extractNameFromUrlPath(url) {
@@ -306,11 +408,27 @@ function extractNameFromUrlPath(url) {
   return null
 }
 
+// Add marketplace-specific URL validation
+function isValidMarketplaceUrl(url) {
+  try {
+    const urlObj = new URL(url)
+    const isValid = Object.values(marketplaces).some(m => urlObj.hostname.endsWith(m.domain))
+    if (!isValid) {
+      const validDomains = Object.values(marketplaces).map(m => m.domain)
+      logger.warn(`Unsupported marketplace URL: ${url}. Supported marketplaces: ${validDomains.join(', ')}`)
+    }
+    return isValid
+  } catch {
+    logger.error(`Invalid URL format: ${url}`)
+    return false
+  }
+}
+
 async function extractNameFromUrl(url) {
   let page = null
   try {
-    if (!url) {
-      logger.error(`No URL provided`)
+    if (!isValidMarketplaceUrl(url)) {
+      logger.warn(`Unsupported marketplace URL: ${url}`)
       return null
     }
 

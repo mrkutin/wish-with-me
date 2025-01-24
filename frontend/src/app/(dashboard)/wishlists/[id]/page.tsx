@@ -102,43 +102,48 @@ export default function WishlistDetailPage() {
     }
   }
 
-  async function handleAddItem(data: {
+  async function handleAddItem(itemData: {
     name: string
     url?: string
     price?: number
     currency?: string
-    priority?: 'low' | 'medium' | 'high'
-    notes?: string
+    image?: string
   }) {
     try {
       const token = Cookies.get('token')
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${id}/items`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-
-      if (!res.ok) {
-        throw new Error('Failed to add item')
+      if (!token) {
+        throw new Error('No authentication token found')
       }
 
-      const newItem = await res.json()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${id}/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(itemData)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to add item')
+      }
+
+      const newItem = await response.json()
       
       // Update local state
-      setWishlist(prev => 
-        prev ? {
-          ...prev,
-          items: [...prev.items, newItem]
-        } : null
-      )
+      setWishlist(prev => prev ? {
+        ...prev,
+        items: [...prev.items, newItem]
+      } : null)
 
+      setShowAddModal(false)
       setSuccessMessage('Item added successfully')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add item')
-      throw err // Re-throw to handle in modal
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error
+      }
+      throw new Error('Failed to add item')
     }
   }
 
