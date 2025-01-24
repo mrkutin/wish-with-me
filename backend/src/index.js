@@ -22,7 +22,15 @@ const browserService = require('./services/browser.service')
 const app = express()
 
 // Security middleware
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      "img-src": ["'self'", "data:", "https:"],
+    },
+  },
+}))
 app.use(cors())
 app.use(compression())
 app.use(rateLimit({
@@ -59,14 +67,53 @@ const swaggerOptions = {
     info: {
       title: 'Wish With Me API Documentation',
       version: '1.0.0',
-      description: 'API documentation for Wish With Me'
-    }
+      description: 'API documentation for Wish With Me - a collaborative wishlist management system',
+      contact: {
+        name: 'API Support',
+        email: 'support@wishwithme.com'
+      },
+      license: {
+        name: 'MIT',
+        url: 'https://opensource.org/licenses/MIT'
+      }
+    },
+    servers: [
+      {
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://api.wishwithme.com' 
+          : 'http://localhost:3000',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
+    },
+    security: [{
+      bearerAuth: []
+    }]
   },
   apis: ['./src/components/**/*.js']
 }
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs))
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Wish With Me API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    tryItOutEnabled: true
+  }
+}))
 
 // Error handling
 app.use(errorHandler)
