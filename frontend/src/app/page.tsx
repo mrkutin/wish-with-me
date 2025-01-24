@@ -5,8 +5,69 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
+// Define proper types for SVG props
+interface SVGProps extends React.SVGProps<SVGSVGElement> {
+  className?: string
+}
+
+interface Feature {
+  title: string
+  description: string
+  icon: React.FC<SVGProps>
+}
+
+interface Testimonial {
+  quote: string
+  author: {
+    name: string
+    title: string
+    image: string
+  }
+}
+
 export default function HomePage() {
   const { user, loading } = useAuth()
+
+  const features: Feature[] = [
+    {
+      title: 'Create Wishlists',
+      description: 'Create and organize your wishlists for any occasion. Add items, set priorities, and keep everything organized.',
+      icon: (props: SVGProps) => (
+        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      )
+    },
+    {
+      title: 'Share with Anyone',
+      description: 'Share your wishlists with friends and family via email or link. Control who can see and edit your lists.',
+      icon: (props: SVGProps) => (
+        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+        </svg>
+      )
+    },
+    {
+      title: 'Track Purchases',
+      description: 'Keep track of purchased items and avoid duplicate gifts. Perfect for birthdays, holidays, and special occasions.',
+      icon: (props: SVGProps) => (
+        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    }
+  ]
+
+  const testimonials: Testimonial[] = [
+    {
+      quote: "WishWithMe made organizing our wedding registry so much easier! Our guests loved how simple it was to find and purchase gifts.",
+      author: {
+        name: "Sarah & John",
+        title: "Recently Married",
+        image: ""
+      }
+    }
+  ]
 
   if (loading) {
     return <LoadingSpinner />
@@ -29,9 +90,11 @@ export default function HomePage() {
               <br />
               <span className="text-primary">with anyone, anywhere</span>
             </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
-              Make gift-giving easier. Create personalized wishlists, share them with friends and family,
-              and keep track of your shopping - all in one place.
+            <p className="text-lg text-text-secondary mb-8">
+              Let&apos;s make gift-giving easier
+            </p>
+            <p className="text-base text-text-secondary">
+              We&apos;re here to help you organize your wishes
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               {!user ? (
@@ -74,7 +137,7 @@ export default function HomePage() {
               <span className="text-accent font-medium"> Start for free today!</span>
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
+              {features.map((feature) => (
                 <div
                   key={feature.title}
                   className="group bg-background-card p-6 rounded-xl shadow-sm hover:shadow-md transition-all border border-border hover:border-accent/20"
@@ -95,13 +158,12 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <blockquote>
               <p className="text-xl font-medium text-text-primary">
-                "WishWithMe made organizing our wedding registry so much easier! 
-                Our guests loved how simple it was to find and purchase gifts."
+                {testimonials[0].quote}
               </p>
             </blockquote>
             <div className="mt-6">
-              <div className="text-accent font-semibold">Sarah & John</div>
-              <div className="text-text-secondary text-sm">Recently Married</div>
+              <div className="text-accent font-semibold">{testimonials[0].author.name}</div>
+              <div className="text-text-secondary text-sm">{testimonials[0].author.title}</div>
             </div>
           </div>
         </section>
@@ -146,39 +208,3 @@ export default function HomePage() {
     </div>
   )
 }
-
-const features = [
-  {
-    title: 'Create Wishlists',
-    description: 'Create and organize your wishlists for any occasion. Add items, set priorities, and keep everything organized.',
-    icon: function ListIcon(props: any) {
-      return (
-        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-        </svg>
-      )
-    }
-  },
-  {
-    title: 'Share with Anyone',
-    description: 'Share your wishlists with friends and family via email or link. Control who can see and edit your lists.',
-    icon: function ShareIcon(props: any) {
-      return (
-        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-        </svg>
-      )
-    }
-  },
-  {
-    title: 'Track Purchases',
-    description: 'Keep track of purchased items and avoid duplicate gifts. Perfect for birthdays, holidays, and special occasions.',
-    icon: function CartIcon(props: any) {
-      return (
-        <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      )
-    }
-  }
-]

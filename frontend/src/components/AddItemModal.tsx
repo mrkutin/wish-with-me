@@ -31,7 +31,7 @@ export default function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModal
 
     try {
       await onSubmit({
-        name: formData.name || undefined,
+        name: formData.name,
         url: formData.url || undefined
       })
       

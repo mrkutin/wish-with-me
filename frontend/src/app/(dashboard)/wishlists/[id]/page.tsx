@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, ExternalLink, Edit, Trash2, Gift, Star, Package, ShoppingBag } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { ArrowLeft, Plus, Gift, Star, Package } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import DropdownMenu from '@/components/DropdownMenu'
 import ErrorToast from '@/components/ErrorToast'
 import Cookies from 'js-cookie'
 import AddItemModal from '@/components/AddItemModal'
@@ -32,8 +31,9 @@ interface Wishlist {
   updatedAt: string
 }
 
-export default function WishlistDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params)
+export default function WishlistDetailPage() {
+  const params = useParams()
+  const id = params.id as string
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
   const [wishlist, setWishlist] = useState<Wishlist | null>(null)
@@ -42,11 +42,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   const [showAddModal, setShowAddModal] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
-  useEffect(() => {
-    fetchWishlist()
-  }, [resolvedParams.id])
-
-  async function fetchWishlist() {
+  const fetchWishlist = useCallback(async () => {
     try {
       const token = Cookies.get('token')
       if (!token) {
@@ -54,7 +50,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
         return
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${resolvedParams.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -74,12 +70,16 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
+
+  useEffect(() => {
+    fetchWishlist()
+  }, [fetchWishlist])
 
   async function handleDeleteItem(itemId: string) {
     try {
       const token = Cookies.get('token')
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${resolvedParams.id}/items/${itemId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${id}/items/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -112,7 +112,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   }) {
     try {
       const token = Cookies.get('token')
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${resolvedParams.id}/items`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${id}/items`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,12 +165,6 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
 
   if (!wishlist) {
     return null
-  }
-
-  const priorityColors = {
-    low: 'text-green-500',
-    medium: 'text-yellow-500',
-    high: 'text-red-500'
   }
 
   return (

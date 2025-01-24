@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -218,10 +219,12 @@ export default function SignupPage() {
                   type="button"
                   className="w-full inline-flex justify-center py-2.5 px-4 rounded-md shadow-sm bg-background border border-border text-sm font-medium text-text-primary hover:bg-background-alt focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
                 >
-                  <img 
-                    src="https://www.google.com/favicon.ico" 
-                    alt="Google" 
-                    className="h-5 w-5 mr-2"
+                  <Image 
+                    src="/images/google-icon.png"
+                    alt="Google"
+                    width={20}
+                    height={20}
+                    className="mr-2"
                   />
                   Google
                 </button>

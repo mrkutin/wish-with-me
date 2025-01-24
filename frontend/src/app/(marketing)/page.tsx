@@ -1,44 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, Heart, Gift, Star } from 'lucide-react'
+import { Heart, Gift, Star, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
-export default function Home() {
-  const router = useRouter()
-  const { user, loading } = useAuth()
-  const [hasWishlists, setHasWishlists] = useState<boolean | null>(null)
+export default function MarketingPage() {
+  const { user } = useAuth()
 
   useEffect(() => {
     if (user) {
-      fetchWishlists()
+      window.location.href = '/wishlists'
     }
   }, [user])
-
-  async function fetchWishlists() {
-    try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setHasWishlists(data.length > 0)
-      }
-    } catch (err) {
-      console.error('Failed to fetch wishlists:', err)
-    }
-  }
-
-  const buttonHref = user ? '/wishlists' : '/login'
-  const buttonText = user 
-    ? (hasWishlists ? 'My wishlists' : 'Create your wishlist')
-    : 'Create your wishlist'
 
   return (
     <div className="flex min-h-full flex-col">
@@ -70,10 +44,10 @@ export default function Home() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
-                href={buttonHref}
+                href="/login"
                 className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
               >
-                {buttonText}
+                Create your wishlist
                 <ArrowRight className="ml-2 inline-block h-4 w-4" />
               </Link>
               <Link

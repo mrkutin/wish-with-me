@@ -2,25 +2,30 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Gift, MoreVertical, Share2, Trash2, Heart, Edit, Link as LinkIcon, Star, Package } from 'lucide-react'
+import { Plus, Gift, Share2, Edit, Trash2, Link as LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
-import LoadingSpinner from '@/components/LoadingSpinner'
-import CreateWishlistModal from '@/components/CreateWishlistModal'
-import Cookies from 'js-cookie'
+import WishlistSkeleton from '@/components/WishlistSkeleton'
 import ConfirmDeleteModal from '@/components/ConfirmDeleteModal'
 import Toast from '@/components/Toast'
-import WishlistSkeleton from '@/components/WishlistSkeleton'
 import ErrorToast from '@/components/ErrorToast'
 import DropdownMenu from '@/components/DropdownMenu'
+import CreateWishlistModal from '@/components/CreateWishlistModal'
+import Cookies from 'js-cookie'
 
 interface Wishlist {
   _id: string
   name: string
   description?: string
-  items: any[]
+  items: WishlistItem[]
   createdAt: string
   updatedAt: string
+}
+
+interface WishlistItem {
+  _id: string
+  name: string
+  // ... other item properties
 }
 
 export default function WishlistsPage() {
@@ -34,7 +39,6 @@ export default function WishlistsPage() {
   const [deletedWishlist, setDeletedWishlist] = useState<Wishlist | null>(null)
   const [showUndoToast, setShowUndoToast] = useState(false)
   const [errorToast, setErrorToast] = useState<string | null>(null)
-  const [fetchKey, setFetchKey] = useState(0)
 
   useEffect(() => {
     let ignore = false
@@ -82,7 +86,7 @@ export default function WishlistsPage() {
     return () => {
       ignore = true
     }
-  }, [authLoading, router, fetchKey])
+  }, [authLoading, router])
 
   async function handleCreateWishlist(name: string, description: string) {
     const token = Cookies.get('token')

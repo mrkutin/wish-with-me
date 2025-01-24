@@ -18,7 +18,7 @@ interface UpdateProfileData {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [isUpdating, setIsUpdating] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -29,17 +29,10 @@ export default function ProfilePage() {
     newPassword: ''
   })
 
-  if (loading) {
-    return <LoadingSpinner />
-  }
-
-  if (!user) {
-    router.push('/login')
-    return null
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!user) return
+
     setIsUpdating(true)
     setErrorMessage('')
 
@@ -87,6 +80,12 @@ export default function ProfilePage() {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  if (authLoading) return <LoadingSpinner />
+  if (!user) {
+    router.push('/login')
+    return null
   }
 
   return (

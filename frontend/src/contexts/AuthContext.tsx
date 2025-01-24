@@ -36,12 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const userData = JSON.parse(savedUser)
           setUser(userData)
-        } catch (err) {
-          console.error('Failed to parse saved user data:', err)
+        } catch (error: unknown) {
+          console.error('Failed to parse saved user data:', error)
           handleAuthError('Invalid session data')
         }
       }
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Failed to access cookies:', error)
       handleAuthError('Failed to access cookies')
     } finally {
       setLoading(false)
@@ -74,7 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData)
       clearError()
       router.push('/wishlists')
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error('Login error:', error)
       handleAuthError('Failed to set authentication data')
     }
   }

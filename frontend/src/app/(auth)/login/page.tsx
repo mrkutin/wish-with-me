@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, user, loading, error, clearError } = useAuth()
+  const { login, user, loading, clearError } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [errorState, setError] = useState('')
+  const [loginError, setLoginError] = useState('')
 
   // Redirect if already logged in
   useEffect(() => {
@@ -25,11 +26,11 @@ export default function LoginPage() {
   useEffect(() => {
     // Clear any existing auth errors when mounting
     clearError()
-  }, [])
+  }, [clearError])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
+    setLoginError('')
     setIsLoading(true)
 
     try {
@@ -49,7 +50,7 @@ export default function LoginPage() {
 
       login(data.token, data.user)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setLoginError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setIsLoading(false)
     }
@@ -80,7 +81,7 @@ export default function LoginPage() {
             Welcome back
           </h1>
           <p className="mt-2 text-sm text-text-secondary">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-primary hover:text-primary-dark font-medium">
               Sign up
             </Link>
@@ -90,9 +91,9 @@ export default function LoginPage() {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-background-card py-8 px-6 shadow-sm rounded-lg border border-border sm:px-10">
             <form className="space-y-6" onSubmit={onSubmit}>
-              {error && (
+              {loginError && (
                 <div className="p-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
-                  {error}
+                  {loginError}
                 </div>
               )}
               
@@ -177,10 +178,12 @@ export default function LoginPage() {
                   type="button"
                   className="w-full inline-flex justify-center py-2.5 px-4 rounded-md shadow-sm bg-background border border-border text-sm font-medium text-text-primary hover:bg-background-alt focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
                 >
-                  <img 
-                    src="https://www.google.com/favicon.ico" 
-                    alt="Google" 
-                    className="h-5 w-5 mr-2"
+                  <Image 
+                    src="/images/logo.png" 
+                    alt="Logo" 
+                    width={20} 
+                    height={20}
+                    priority
                   />
                   Google
                 </button>
