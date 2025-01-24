@@ -27,6 +27,7 @@ export default function WishlistItemCard({ item, onEdit, onDelete }: WishlistIte
   const showIcon = !item.image || imageError
   const isOzon = item.url?.includes('ozon.ru')
 
+  console.log('Price:', item.price, 'Type:', typeof item.price)
   console.log('Item image URL:', item.image)
   console.log('Show icon:', showIcon)
 
@@ -76,7 +77,10 @@ export default function WishlistItemCard({ item, onEdit, onDelete }: WishlistIte
 
           <div className="mt-2 flex items-center justify-between">
             <p className="text-lg font-semibold text-text-primary truncate">
-              {item.price} {item.currency}
+              {Number(item.price).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} {item.currency}
             </p>
             {isOzon && (
               <a
