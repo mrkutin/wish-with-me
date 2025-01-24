@@ -16,6 +16,7 @@ interface WishlistItemProps {
     notes?: string
   }
   onEdit?: () => void
+  onDelete?: () => void
 }
 
 export default function WishlistItemCard({ item, onEdit }: WishlistItemProps) {
