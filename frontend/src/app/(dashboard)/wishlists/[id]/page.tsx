@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, ExternalLink, Edit, Trash2, Gift, Heart, Star, Package, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Plus, ExternalLink, Edit, Trash2, Gift, Star, Package, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -11,6 +11,7 @@ import ErrorToast from '@/components/ErrorToast'
 import Cookies from 'js-cookie'
 import AddItemModal from '@/components/AddItemModal'
 import SuccessToast from '@/components/SuccessToast'
+import WishlistItemCard from '@/components/WishlistItemCard'
 
 interface WishlistItem {
   _id: string
@@ -215,64 +216,12 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {wishlist.items.map(item => (
-                <div 
+                <WishlistItemCard
                   key={item._id}
-                  className="bg-background rounded-lg border border-border hover:border-primary/20 transition-colors p-6"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-medium text-text-primary flex items-center">
-                        <ShoppingBag className="h-5 w-5 mr-2 text-primary" />
-                        {item.url ? (
-                          <a 
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center hover:text-primary transition-colors"
-                          >
-                            {item.name}
-                            <ExternalLink className="ml-2 h-4 w-4" />
-                          </a>
-                        ) : (
-                          item.name
-                        )}
-                      </h3>
-                      {item.price && (
-                        <p className="mt-1 text-text-secondary">
-                          {item.price.toLocaleString(undefined, {
-                            style: 'currency',
-                            currency: item.currency || 'USD'
-                          })}
-                        </p>
-                      )}
-                      {item.notes && (
-                        <p className="mt-2 text-sm text-text-secondary">{item.notes}</p>
-                      )}
-                    </div>
-                    <DropdownMenu
-                      actions={[
-                        {
-                          label: 'Edit',
-                          icon: <Edit className="h-4 w-4" />,
-                          onClick: () => {/* TODO: Implement edit */}
-                        },
-                        {
-                          label: 'Delete',
-                          icon: <Trash2 className="h-4 w-4" />,
-                          onClick: () => handleDeleteItem(item._id),
-                          variant: 'danger'
-                        }
-                      ]}
-                    />
-                  </div>
-                  {item.priority && (
-                    <div className="mt-4">
-                      <span className={`text-sm font-medium ${priorityColors[item.priority]}`}>
-                        {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} Priority
-                      </span>
-                    </div>
-                  )}
-                </div>
+                  item={item}
+                  onEdit={() => {/* TODO: Implement edit */}}
+                  onDelete={() => handleDeleteItem(item._id)}
+                />
               ))}
             </div>
           )}

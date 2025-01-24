@@ -34,42 +34,55 @@ export default function WishlistsPage() {
   const [deletedWishlist, setDeletedWishlist] = useState<Wishlist | null>(null)
   const [showUndoToast, setShowUndoToast] = useState(false)
   const [errorToast, setErrorToast] = useState<string | null>(null)
+  const [fetchKey, setFetchKey] = useState(0)
 
   useEffect(() => {
-    fetchWishlists()
-  }, [])
+    let ignore = false
 
-  async function fetchWishlists() {
-    setIsLoadingWishlists(true)
-    try {
-      const token = Cookies.get('token')
-      if (!token) {
-        router.push('/login')
-        return
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!res.ok) {
-        if (res.status === 401) {
+    async function fetchWishlists() {
+      if (authLoading) return
+      
+      try {
+        const token = Cookies.get('token')
+        if (!token) {
           router.push('/login')
           return
         }
-        throw new Error('Failed to fetch wishlists')
-      }
 
-      const data = await res.json()
-      setWishlists(data)
-    } catch (err) {
-      console.error('Failed to fetch wishlists:', err)
-    } finally {
-      setIsLoadingWishlists(false)
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-store'
+          }
+        })
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            router.push('/login')
+            return
+          }
+          throw new Error('Failed to fetch wishlists')
+        }
+
+        const data = await res.json()
+        if (!ignore) {
+          setWishlists(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch wishlists:', err)
+      } finally {
+        if (!ignore) {
+          setIsLoadingWishlists(false)
+        }
+      }
     }
-  }
+
+    fetchWishlists()
+
+    return () => {
+      ignore = true
+    }
+  }, [authLoading, router, fetchKey])
 
   async function handleCreateWishlist(name: string, description: string) {
     const token = Cookies.get('token')
