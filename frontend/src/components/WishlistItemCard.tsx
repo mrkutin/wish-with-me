@@ -41,7 +41,7 @@ export default function WishlistItemCard({ item, onEdit, onDelete }: WishlistIte
             </div>
           ) : (
             <Image
-              src={item.image}
+              src={item.image!}
               alt={item.name}
               fill
               sizes="(max-width: 96px) 100vw, 96px"
