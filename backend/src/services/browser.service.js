@@ -7,39 +7,38 @@ const marketplaces = {
   OZON: {
     domain: 'ozon.ru',
     selectors: {
-      name: 'h1[data-widget="webProductHeading"], h1',
+      name: 'h1[data-widget="webProductHeading"], div[data-widget="webProductHeading"], h1',
       price: '[data-widget="webPrice"] span',
-      image: 'img[src*="cdn"][src*="product"], img[data-index="0"]'
+      image: 'img[src*="cdn"][src*="product"], img[data-widget="webGallery"]'
     },
     parse: (document, { cleanText, extractPrice }) => ({
-      name: cleanText(document.querySelector('h1[data-widget="webProductHeading"], h1')?.textContent || ''),
+      name: cleanText(document.querySelector('h1[data-widget="webProductHeading"], div[data-widget="webProductHeading"], h1')?.textContent || ''),
       price: extractPrice(document.querySelector('[data-widget="webPrice"]')?.textContent || ''),
       currency: 'RUB',
-      image: document.querySelector('img[src*="cdn"][src*="product"]')?.src ||
-             document.querySelector('img[data-index="0"]')?.src
+      image: document.querySelector('img[src*="cdn"][src*="product"], img[data-widget="webGallery"]')?.src
     })
   },
   WILDBERRIES: {
     domain: 'wildberries.ru',
+    useApi: true,
     selectors: {
-      name: '.product-page__header h1',
-      price: '.price-block__final-price',
-      image: '.slide__content img, .photo-zoom__preview'
+      name: '.product-page__header h1, .product-page h1, h1.same-part-kt__header',
+      price: '.price-block__final-price, .price-block__price, span.price-block__final-price',
+      image: '.slide__content img[src], .j-zoom-image[src], img.photo-zoom__preview[src]'
     },
     parse: (document, { cleanText, extractPrice }) => ({
-      name: cleanText(document.querySelector('.product-page__header h1')?.textContent || ''),
-      price: extractPrice(document.querySelector('.price-block__final-price')?.textContent || ''),
+      name: cleanText(document.querySelector('.product-page__header h1, .product-page h1, h1.same-part-kt__header')?.textContent || ''),
+      price: extractPrice(document.querySelector('.price-block__final-price, .price-block__price, span.price-block__final-price')?.textContent || ''),
       currency: 'RUB',
-      image: document.querySelector('.slide__content img')?.src ||
-             document.querySelector('.photo-zoom__preview')?.src
+      image: document.querySelector('.slide__content img[src], .j-zoom-image[src], img.photo-zoom__preview[src]')?.src
     })
   },
   YANDEX_MARKET: {
     domain: 'market.yandex.ru',
     selectors: {
-      name: 'h1._3TfWusA7bt, h1',
-      price: 'span[data-auto="price-value"], ._3nw6gx8TZy',
-      image: 'img._3Wp5KMHYn1, img[src*="market"], .image_type_center img'
+      name: '[data-auto="product-headline"], [data-baobab-name="title"], h1',
+      price: '[data-auto="price-value"], [data-zone-name="price"]',
+      image: '[data-auto="product-image"], [data-zone-name="picture"] img'
     },
     cookies: [
       { name: 'yandex_login', value: '', domain: '.yandex.ru' },
@@ -47,10 +46,10 @@ const marketplaces = {
       { name: '_ym_uid', value: Date.now().toString(), domain: '.market.yandex.ru' }
     ],
     parse: (document, { cleanText, extractPrice }) => ({
-      name: cleanText(document.querySelector('h1._3TfWusA7bt, h1')?.textContent || ''),
-      price: extractPrice(document.querySelector('span[data-auto="price-value"], ._3nw6gx8TZy')?.textContent || ''),
+      name: cleanText(document.querySelector('[data-auto="product-headline"], [data-baobab-name="title"], h1')?.textContent || ''),
+      price: extractPrice(document.querySelector('[data-auto="price-value"], [data-zone-name="price"]')?.textContent || ''),
       currency: 'RUB',
-      image: document.querySelector('img._3Wp5KMHYn1, img[src*="market"], .image_type_center img')?.src
+      image: document.querySelector('[data-auto="product-image"], [data-zone-name="picture"] img')?.src
     })
   }
 }
@@ -143,7 +142,7 @@ async function setPageHeaders(page) {
 
 async function configurePage(page) {
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+  await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36')
   
   await setupPageLogging(page)
   await applyBotEvasion(page)
@@ -164,11 +163,45 @@ async function configurePage(page) {
     Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 })
     Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 })
   })
+
+  // Additional headers for Wildberries
+  await page.setExtraHTTPHeaders({
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1'
+  })
+
+  // Additional evasion for Wildberries
+  await page.evaluateOnNewDocument(() => {
+    // Override navigator properties
+    Object.defineProperty(navigator, 'platform', { get: () => 'Win32' })
+    Object.defineProperty(navigator, 'productSub', { get: () => '20100101' })
+    Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' })
+    Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 0 })
+
+    // Add touch support check
+    window.TouchEvent = function() {}
+
+    // Add WebGL support
+    const getContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function(type) {
+      if (type === 'webgl2') return null
+      return getContext.apply(this, arguments)
+    }
+  })
 }
 
 async function navigateToUrl(page, url) {
   const domain = new URL(url).hostname
-  await page.setCookie({ name: 'session-check', value: '1', domain })
   
   const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
   
@@ -176,25 +209,62 @@ async function navigateToUrl(page, url) {
     await page.setCookie(...marketplace.cookies)
   }
   
+  if (marketplace?.domain === 'wildberries.ru') {
+    await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1')
+    
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'ru,en;q=0.9',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'DNT': '1',
+      'Referer': 'https://www.wildberries.ru/',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'same-origin',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1'
+    })
+
+    await page.waitForTimeout(Math.random() * 1000 + 500)
+  }
+
   const response = await page.goto(url, {
-    waitUntil: marketplace?.domain === 'market.yandex.ru' ? 'domcontentloaded' : ['domcontentloaded', 'networkidle0'],
-    timeout: 30000
+    waitUntil: ['domcontentloaded', 'networkidle0'],
+    timeout: 60000
   })
 
-  if (marketplace) {
+  if (marketplace?.domain === 'wildberries.ru') {
+    await page.waitForTimeout(2000)
+
+    await page.evaluate(() => {
+      const scrollStep = 100
+      const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+      return new Promise(async (resolve) => {
+        for (let i = 0; i < 3; i++) {
+          window.scrollBy(0, scrollStep)
+          await delay(100)
+          window.scrollBy(0, -scrollStep/2)
+          await delay(100)
+        }
+        resolve()
+      })
+    })
+
     try {
-      await page.waitForSelector(Object.values(marketplace.selectors).join(', '), { timeout: 5000 })
+      await page.waitForFunction(() => {
+        const name = document.querySelector('.product-page__header h1, .product-page h1, h1.same-part-kt__header')?.textContent
+        const price = document.querySelector('.price-block__final-price, .price-block__price, span.price-block__final-price')?.textContent
+        return name && price
+      }, { timeout: 15000 })
     } catch (e) {
-      // If specific selectors not found, wait for any content
-      await page.waitForSelector('h1, .price', { timeout: 5000 })
+      logger.error('Failed to extract Wildberries content:', {
+        url,
+        error: e.message,
+        stack: e.stack
+      })
+      throw new Error('Failed to extract product details')
     }
-  } else {
-    await Promise.race([
-      page.waitForSelector('h1'),
-      page.waitForSelector('meta[property="og:title"]'),
-      page.waitForSelector('[data-widget="webProductHeading"]'),
-      new Promise(resolve => setTimeout(resolve, 5000))
-    ])
   }
 
   return response
@@ -424,12 +494,60 @@ function isValidMarketplaceUrl(url) {
   }
 }
 
+async function getWildberriesProductInfo(url) {
+  try {
+    // Extract product ID from URL
+    const productId = url.match(/catalog\/(\d+)/)?.[1]
+    if (!productId) {
+      throw new Error('Could not extract product ID from URL')
+    }
+
+    // Use Wildberries mobile API
+    const apiUrl = `https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&spp=27&nm=${productId}`
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const product = data.data.products?.[0]
+
+    if (!product) {
+      throw new Error('Product not found in API response')
+    }
+
+    return {
+      name: product.name,
+      price: product.salePriceU / 100, // Price comes in kopeks
+      currency: 'RUB',
+      image: `https://images.wbstatic.net/big/new/${Math.floor(productId/10000)}0000/${productId}-1.jpg`
+    }
+  } catch (error) {
+    logger.error('Failed to fetch Wildberries product info:', error)
+    return null
+  }
+}
+
 async function extractNameFromUrl(url) {
   let page = null
   try {
     if (!isValidMarketplaceUrl(url)) {
       logger.warn(`Unsupported marketplace URL: ${url}`)
       return null
+    }
+
+    // Check if it's a Wildberries URL
+    const domain = new URL(url).hostname
+    const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
+    
+    if (marketplace?.domain === 'wildberries.ru') {
+      return await getWildberriesProductInfo(url)
     }
 
     logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)

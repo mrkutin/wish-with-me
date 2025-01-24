@@ -498,6 +498,222 @@
             "description": "Try to add item with URL longer than 500 characters"
           },
           "response": []
+        },
+        {
+          "name": "Resolve Item - Ozon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.ozon.ru/product/besprovodnye-naushniki-xiaomi-buds-5-chernyy-grafit-1682717067/?advert=ADcBeTk3l5gB0M_wHoM8Qxd2XcI1EfqXyVZHLsRyL1Z_qYCocJeRd9OoD7GrCQ6ucH3fmr1wFHrJcfqidlk-0oGGvt_6_YIczIlflbEkOBTOc5ycQ_KEEkMZ0Munhz6xfYRlPRiq395MLiW6Z9gMvthc7wh7wvqocfdQMCbb8ucd0YWHKlcVP7Zk1woUsMQG0PRIAKWC2C46--ExN2jZCsL7qDdxTwa_tGS7lBZwcamSWEXb-8bR4uE9LF4&avtc=1&avte=2&avts=1737736977\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Ozon URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Wildberries",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.wildberries.ru/catalog/148440242/detail.aspx\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Wildberries URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Yandex Market",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://market.yandex.ru/product--x170/148440242\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Yandex Market URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Ozon Mobile URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://m.ozon.ru/product/smartfon-apple-iphone-13-128gb-belyy-315277760/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Ozon mobile URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Wildberries Mobile URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://m.wildberries.ru/catalog/148440242/detail.aspx\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Wildberries mobile URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Invalid URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"not-a-valid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item details from invalid URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Unsupported Marketplace",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.amazon.com/some-product\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item from unsupported marketplace"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - No URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item without providing URL"
+          },
+          "response": []
         }
       ]
     }
