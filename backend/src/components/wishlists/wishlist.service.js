@@ -25,15 +25,15 @@ class WishlistService {
           _rev: response.rev
         }
       } catch (dbError) {
-        logger.error('Database error details:', {
+        logger.error(`Database error details: ${JSON.stringify({
           error: dbError,
           document: wishlist
-        })
+        })}`)
         throw new AppError(500, 'Database operation failed')
       }
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to create wishlist:', error)
+      logger.error(`Failed to create wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to create wishlist')
     }
   }
@@ -49,7 +49,7 @@ class WishlistService {
       const result = await db.find(query)
       return result.docs
     } catch (error) {
-      logger.error('Failed to get wishlists:', error)
+      logger.error(`Failed to get wishlists: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to get wishlists')
     }
   }
@@ -73,7 +73,7 @@ class WishlistService {
         throw new AppError(404, 'Wishlist not found')
       }
       if (error instanceof AppError) throw error
-      logger.error('Failed to get wishlist:', error)
+      logger.error(`Failed to get wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to get wishlist')
     }
   }
@@ -104,7 +104,7 @@ class WishlistService {
       }
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to update wishlist:', error)
+      logger.error(`Failed to update wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to update wishlist')
     }
   }
@@ -128,7 +128,7 @@ class WishlistService {
       return null
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to delete wishlist:', error)
+      logger.error(`Failed to delete wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to delete wishlist')
     }
   }
@@ -145,14 +145,18 @@ class WishlistService {
         throw new AppError(403, 'Not authorized to modify this wishlist')
       }
 
-      logger.debug('Adding item to wishlist:', { wishlistId, itemData })
+      logger.debug(`Adding item to wishlist: ${JSON.stringify({ wishlistId, itemData })}`)
 
-      // If only URL is provided, try to extract name
-      if (itemData.url && !itemData.name) {
-        const extractedName = await browserService.extractNameFromUrl(itemData.url)
-        if (extractedName) {
-          itemData.name = extractedName
-          logger.debug('Using extracted name:', { name: itemData.name })
+      // If URL is provided, try to extract info
+      if (itemData.url) {
+        const extractedInfo = await browserService.extractNameFromUrl(itemData.url)
+        if (extractedInfo) {
+          if (extractedInfo.name) itemData.name = extractedInfo.name
+          if (extractedInfo.price) itemData.price = extractedInfo.price
+          if (extractedInfo.currency) itemData.currency = extractedInfo.currency
+          if (extractedInfo.image) itemData.image = extractedInfo.image
+          
+          logger.debug(`Using extracted info: ${JSON.stringify({ extractedInfo })}`)
         }
       }
 
@@ -164,14 +168,24 @@ class WishlistService {
 
       let updatedItem
       if (existingItem) {
-        logger.debug('Found existing item, updating quantity:', { 
-          existingItem 
-        })
+        logger.debug(`Found existing item, updating quantity: ${JSON.stringify({ existingItem })}`)
         // Increment quantity of existing item
         existingItem.quantity += 1
         // Update name if provided
         if (itemData.name) {
           existingItem.name = itemData.name
+        }
+        // Update price if provided
+        if (itemData.price) {
+          existingItem.price = itemData.price
+        }
+        // Update currency if provided
+        if (itemData.currency) {
+          existingItem.currency = itemData.currency
+        }
+        // Update image if provided
+        if (itemData.image) {
+          existingItem.image = itemData.image
         }
         // Update the timestamp
         existingItem.updatedAt = new Date().toISOString()
@@ -183,11 +197,14 @@ class WishlistService {
           wishlistId,
           name: itemData.name,
           url: itemData.url,
+          price: itemData.price || null,
+          currency: itemData.currency || null,
+          image: itemData.image || null,
           quantity: 1,
           addedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
-        logger.debug('Creating new item:', { updatedItem })
+        logger.debug(`Creating new item: ${JSON.stringify({ updatedItem })}`)
 
         // Add new item to wishlist
         wishlist.items.push(updatedItem)
@@ -197,23 +214,23 @@ class WishlistService {
       wishlist.updatedAt = new Date().toISOString()
       await dbClient.updateDocument('wishlists', wishlistId, wishlist)
 
-      logger.info('Item added successfully:', { 
+      logger.info(`Item added successfully: ${JSON.stringify({ 
         wishlistId, 
         itemId: updatedItem._id,
         name: updatedItem.name 
-      })
+      })}`)
 
       return updatedItem
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to add item to wishlist:', {
+      logger.error(`Failed to add item to wishlist: ${JSON.stringify({
         wishlistId,
         itemData,
         error: {
           message: error.message,
           stack: error.stack
         }
-      })
+      })}`)
       throw new AppError(500, 'Failed to add item to wishlist')
     }
   }
@@ -254,7 +271,7 @@ class WishlistService {
       return null
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to remove item from wishlist:', error)
+      logger.error(`Failed to remove item from wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to remove item from wishlist')
     }
   }
@@ -333,12 +350,12 @@ class WishlistService {
           _rev: response.rev
         }
       } catch (dbError) {
-        logger.error('Database error details:', {
+        logger.error(`Database error details: ${JSON.stringify({
           error: dbError,
           wishlistId,
           targetUserId,
           document: wishlist
-        })
+        })}`)
         throw new AppError(500, 'Database operation failed')
       }
     } catch (error) {
@@ -346,7 +363,7 @@ class WishlistService {
         throw new AppError(404, 'Wishlist not found')
       }
       if (error instanceof AppError) throw error
-      logger.error('Failed to unshare wishlist:', error)
+      logger.error(`Failed to unshare wishlist: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to unshare wishlist')
     }
   }
@@ -369,19 +386,19 @@ class WishlistService {
         throw new AppError(404, 'Item not found')
       }
 
-      logger.debug('Updating item:', { 
+      logger.debug(`Updating item: ${JSON.stringify({ 
         wishlistId, 
         itemId, 
         currentItem: item,
         updateData 
-      })
+      })}`)
 
       // If URL is being updated and name is not provided, try to extract name
       if (updateData.url && !updateData.name && updateData.url !== item.url) {
         const extractedName = await browserService.extractNameFromUrl(updateData.url)
         if (extractedName) {
           updateData.name = extractedName
-          logger.debug('Using extracted name:', { name: updateData.name })
+          logger.debug(`Using extracted name: ${JSON.stringify({ name: updateData.name })}`)
         }
       }
 
@@ -397,16 +414,16 @@ class WishlistService {
       // Update wishlist in database
       await dbClient.updateDocument('wishlists', wishlistId, wishlist)
 
-      logger.info('Item updated successfully:', {
+      logger.info(`Item updated successfully: ${JSON.stringify({
         wishlistId,
         itemId: item._id,
         name: item.name
-      })
+      })}`)
 
       return item
     } catch (error) {
       if (error instanceof AppError) throw error
-      logger.error('Failed to update item in wishlist:', {
+      logger.error(`Failed to update item in wishlist: ${JSON.stringify({
         wishlistId,
         itemId,
         updateData,
@@ -414,7 +431,7 @@ class WishlistService {
           message: error.message,
           stack: error.stack
         }
-      })
+      })}`)
       throw new AppError(500, 'Failed to update item in wishlist')
     }
   }

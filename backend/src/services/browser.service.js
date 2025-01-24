@@ -5,7 +5,7 @@ let browser = null
 
 async function initialize() {
   try {
-    logger.info('Initializing headless browser...')
+    logger.info(`Initializing headless browser...`)
     browser = await puppeteer.launch({
       headless: 'new',
       args: [
@@ -23,12 +23,12 @@ async function initialize() {
       ignoreHTTPSErrors: true,
       defaultViewport: null
     })
-    logger.info('Browser initialized successfully')
+    logger.info(`Browser initialized successfully`)
   } catch (error) {
-    logger.error('Failed to initialize browser:', {
+    logger.error(`Failed to initialize browser: ${JSON.stringify({
       error: error.message,
       stack: error.stack
-    })
+    })}`)
     throw error
   }
 }
@@ -44,13 +44,13 @@ async function cleanup() {
   if (browser) {
     await browser.close()
     browser = null
-    logger.info('Browser closed')
+    logger.info(`Browser closed`)
   }
 }
 
 async function setupPageLogging(page) {
-  page.on('console', msg => logger.debug('Browser console:', { type: msg.type(), text: msg.text() }))
-  page.on('pageerror', error => logger.debug('Page error:', { message: error.message, stack: error.stack }))
+  page.on('console', msg => logger.debug(`Browser console: ${JSON.stringify({ type: msg.type(), text: msg.text() })}`))
+  page.on('pageerror', error => logger.debug(`Page error: ${JSON.stringify({ message: error.message, stack: error.stack })}`))
   page.on('request', request => logger.debug('Outgoing request:', { url: request.url(), method: request.method() }))
   page.on('response', response => logger.debug('Received response:', { url: response.url(), status: response.status() }))
 }
@@ -118,7 +118,7 @@ async function navigateToUrl(page, url) {
   return response
 }
 
-async function extractProductName(page) {
+async function extractProductInfo(page) {
   return await page.evaluate(() => {
     const cleanText = text => text
       .replace(/\s+/g, ' ')
@@ -129,6 +129,11 @@ async function extractProductName(page) {
       .replace(/в интернет.*$/i, '')
       .trim()
 
+    const extractPrice = text => {
+      const numbers = text.replace(/[^\d.,]/g, '')
+      return numbers ? parseFloat(numbers.replace(',', '.')) : null
+    }
+
     const strategies = [
       // JSON-LD
       () => {
@@ -136,25 +141,79 @@ async function extractProductName(page) {
         for (const element of jsonLdElements) {
           try {
             const data = JSON.parse(element.textContent)
-            if (data['@type'] === 'Product' && data.name) return cleanText(data.name)
+            if (data['@type'] === 'Product') {
+              return {
+                name: data.name ? cleanText(data.name) : null,
+                price: data.offers?.price || null,
+                currency: data.offers?.priceCurrency || null,
+                image: Array.isArray(data.image) ? data.image[0] : (typeof data.image === 'string' ? data.image : null)
+              }
+            }
             if (Array.isArray(data)) {
               const product = data.find(item => item['@type'] === 'Product')
-              if (product?.name) return cleanText(product.name)
+              if (product) {
+                return {
+                  name: product.name ? cleanText(product.name) : null,
+                  price: product.offers?.price || null,
+                  currency: product.offers?.priceCurrency || null,
+                  image: Array.isArray(product.image) ? product.image[0] : (typeof product.image === 'string' ? product.image : null)
+                }
+              }
             }
           } catch (e) {}
         }
       },
       // Meta tags
       () => {
-        const metaSelectors = ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]']
-        for (const selector of metaSelectors) {
+        const result = {}
+        const metaTitleSelectors = ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]']
+        const metaPriceSelectors = ['meta[property="product:price:amount"]', 'meta[property="og:price:amount"]']
+        const metaCurrencySelectors = ['meta[property="product:price:currency"]', 'meta[property="og:price:currency"]']
+        const metaImageSelectors = [
+          'meta[property="og:image:secure_url"]',
+          'meta[property="og:image"]',
+          'meta[property="product:image"]',
+          'meta[property="twitter:image"]'
+        ]
+
+        for (const selector of metaTitleSelectors) {
           const meta = document.querySelector(selector)
-          if (meta?.content) return cleanText(meta.content)
+          if (meta?.content) {
+            result.name = cleanText(meta.content)
+            break
+          }
         }
+
+        for (const selector of metaPriceSelectors) {
+          const meta = document.querySelector(selector)
+          if (meta?.content) {
+            result.price = parseFloat(meta.content)
+            break
+          }
+        }
+
+        for (const selector of metaCurrencySelectors) {
+          const meta = document.querySelector(selector)
+          if (meta?.content) {
+            result.currency = meta.content
+            break
+          }
+        }
+
+        for (const selector of metaImageSelectors) {
+          const meta = document.querySelector(selector)
+          if (meta?.content && meta.content.startsWith('http')) {
+            result.image = meta.content
+            break
+          }
+        }
+
+        return Object.keys(result).length ? result : null
       },
       // Common selectors
       () => {
-        const selectors = [
+        const result = {}
+        const nameSelectors = [
           '[data-widget="webProductHeading"]',
           '.rk4 h1',
           'h1[itemprop="name"]',
@@ -163,14 +222,71 @@ async function extractProductName(page) {
           '.product-title',
           'h1'
         ]
-        for (const selector of selectors) {
+        const priceSelectors = [
+          '[itemprop="price"]',
+          '.price-value',
+          '.product-price',
+          '[data-auto="price"]',
+          '[data-widget="price"]',
+          '.rk5'
+        ]
+        const imageSelectors = [
+          // Ozon selectors
+          'img[src*="cdn"][src*="product"]',
+          'img[data-index="0"]',
+          // Common selectors
+          'img[itemprop="image"]',
+          '.product-image img[src*="product"]',
+          '.gallery__main-image img',
+          '.product-gallery__image img',
+          // Fallback selectors
+          '[data-widget="webGallery"] img',
+          '.product-image img',
+          '.gallery-image',
+          '.main-image'
+        ]
+
+        for (const selector of nameSelectors) {
           const element = document.querySelector(selector)
-          if (element?.textContent) return cleanText(element.textContent)
+          if (element?.textContent) {
+            result.name = cleanText(element.textContent)
+            break
+          }
         }
+
+        for (const selector of priceSelectors) {
+          const element = document.querySelector(selector)
+          if (element) {
+            const priceText = element.getAttribute('content') || element.textContent
+            const price = extractPrice(priceText)
+            if (price) {
+              result.price = price
+              // Try to determine currency from the price text
+              if (priceText.includes('₽')) result.currency = 'RUB'
+              else if (priceText.includes('$')) result.currency = 'USD'
+              else if (priceText.includes('€')) result.currency = 'EUR'
+              break
+            }
+          }
+        }
+
+        for (const selector of imageSelectors) {
+          const element = document.querySelector(selector)
+          const imgUrl = element?.src || element?.getAttribute('data-src') || element?.getAttribute('data-lazy-src')
+          if (imgUrl && imgUrl.startsWith('http')) {
+            result.image = imgUrl
+            break
+          }
+        }
+
+        return Object.keys(result).length ? result : null
       }
     ]
 
-    return strategies.reduce((result, strategy) => result || strategy(), null)
+    return strategies.reduce((result, strategy) => {
+      if (result && Object.keys(result).length) return result
+      return strategy() || {}
+    }, null)
   })
 }
 
@@ -194,41 +310,41 @@ async function extractNameFromUrl(url) {
   let page = null
   try {
     if (!url) {
-      logger.error('No URL provided')
+      logger.error(`No URL provided`)
       return null
     }
 
-    logger.debug('Starting extraction process', { url })
+    logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
 
     page = await getPage()
     await configurePage(page)
     await navigateToUrl(page, url)
     
-    const productName = await extractProductName(page)
-
-    if (productName) {
-      logger.info('Successfully extracted name:', { url, name: productName })
-      return productName
+    const productInfo = await extractProductInfo(page)
+    
+    if (!productInfo.name) {
+      productInfo.name = extractNameFromUrlPath(url)
     }
 
-    return extractNameFromUrlPath(url)
+    logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
+    return productInfo
 
   } catch (error) {
-    logger.error('Failed to extract name from URL:', {
+    logger.error(`Failed to extract info from URL: ${JSON.stringify({
       url,
       error: {
         name: error.name,
         message: error.message,
         stack: error.stack
       }
-    })
+    })}`)
     return null
   } finally {
     if (page) {
       await page.close().catch(error => {
-        logger.error('Error closing page:', {
+        logger.error(`Error closing page: ${JSON.stringify({
           error: error.message
-        })
+        })}`)
       })
     }
   }
