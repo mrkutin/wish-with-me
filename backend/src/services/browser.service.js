@@ -407,16 +407,14 @@ async function extractItemInfoByUrl(url) {
     
     logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
 
-    // Use Puppeteer for all marketplaces
     page = await getPage()
     await configurePage(page)
     await navigateToUrl(page, url)
     
-    // Extract product info using JSON-LD first
-    let productInfo = await extractProductInfo(page)
-
-    // If JSON-LD didn't work for Wildberries, try DOM selectors
-    if (marketplace?.domain === 'wildberries.ru' && (!productInfo?.name || !productInfo?.price)) {
+    let productInfo
+    
+    // Use DOM selectors for Wildberries, JSON-LD for others
+    if (marketplace?.domain === 'wildberries.ru') {
       productInfo = await page.evaluate(() => {
         const name = document.querySelector('.product-page__header h1, .product-page h1, h1.same-part-kt__header')?.textContent?.trim()
         const priceText = document.querySelector('.price-block__final-price, .price-block__price, span.price-block__final-price')?.textContent?.trim()
@@ -435,6 +433,8 @@ async function extractItemInfoByUrl(url) {
           image
         }
       })
+    } else {
+      productInfo = await extractProductInfo(page)
     }
 
     logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
