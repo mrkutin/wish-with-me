@@ -149,12 +149,15 @@ export default function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModal
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 {resolveStatus === 'resolving' && (
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" 
-                    title="Resolving item details..." />
+                  <Loader2 
+                    className="h-5 w-5 animate-spin text-primary" 
+                    aria-label="Resolving item details..." />
                 )}
                 {resolveStatus === 'success' && (
-                  <CheckCircle className="h-5 w-5 text-success" 
-                    title="Item details resolved successfully" />
+                  <CheckCircle 
+                    className="h-5 w-5 text-success" 
+                    aria-label="Item details resolved successfully" 
+                  />
                 )}
               </div>
             </div>
