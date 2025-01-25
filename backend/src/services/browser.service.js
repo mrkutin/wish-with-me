@@ -332,8 +332,15 @@ async function navigateToUrl(page, url) {
   return response
 }
 
-async function extractProductInfo(page) {
-  return await page.evaluate((marketplaces) => {
+/**
+ * Extract product information from the page using various strategies
+ * @param {Page} page - Puppeteer page object
+ * @param {Object} marketplace - Marketplace configuration object
+ * @returns {Promise<{name: string, price: number, currency: string, image: string}>}
+ */
+async function extractProductInfo(page, marketplace) {
+  return await page.evaluate((marketplace) => {
+    // Utility functions
     const cleanText = text => text
       .replace(/\s+/g, ' ')
       .trim()
@@ -348,13 +355,13 @@ async function extractProductInfo(page) {
       return numbers ? parseFloat(numbers.replace(',', '.')) : null
     }
 
-    const url = window.location.href
-    const marketplace = Object.values(marketplaces)
-      .find(m => url.includes(m.domain))
+    // Extraction strategies
+    const strategies = {
+      // JSON-LD strategy
+      jsonLd: () => {
 
-    const strategies = [
-      // JSON-LD
-      () => {
+        console.log(`Extracting product info using JSON-LD strategy`)
+
         const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]')
         for (const element of jsonLdElements) {
           try {
@@ -382,149 +389,75 @@ async function extractProductInfo(page) {
         }
       },
 
-      // Marketplace-specific parser
-      () => marketplace?.parse(document, { cleanText, extractPrice }),
+      // Marketplace-specific strategy
+      marketplaceSpecific: () => {
+        
+        console.log(`Extracting product info using marketplace-specific strategy`)
 
-      // Generic meta tags (fallback)
-      () => {
-        const result = {}
-        const metaTitleSelectors = ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]']
-        const metaPriceSelectors = ['meta[property="product:price:amount"]', 'meta[property="og:price:amount"]']
-        const metaCurrencySelectors = ['meta[property="product:price:currency"]', 'meta[property="og:price:currency"]']
-        const metaImageSelectors = [
-          'meta[property="og:image:secure_url"]',
-          'meta[property="og:image"]',
-          'meta[property="product:image"]',
-          'meta[property="twitter:image"]'
-        ]
+        if (!marketplace?.selectors) return null
+        
+        const name = document.querySelector(marketplace.selectors.name)?.textContent
+        const priceElement = document.querySelector(marketplace.selectors.price)
+        const image = document.querySelector(marketplace.selectors.image)?.src
 
-        for (const selector of metaTitleSelectors) {
-          const meta = document.querySelector(selector)
-          if (meta?.content) {
-            result.name = cleanText(meta.content)
-            break
-          }
+        if (!name && !priceElement) return null
+
+        const priceText = priceElement?.textContent
+        const price = priceText ? extractPrice(priceText) : null
+
+        return {
+          name: name ? cleanText(name) : null,
+          price,
+          currency: 'RUB',
+          image
         }
-
-        for (const selector of metaPriceSelectors) {
-          const meta = document.querySelector(selector)
-          if (meta?.content) {
-            result.price = parseFloat(meta.content)
-            break
-          }
-        }
-
-        for (const selector of metaCurrencySelectors) {
-          const meta = document.querySelector(selector)
-          if (meta?.content) {
-            result.currency = meta.content
-            break
-          }
-        }
-
-        for (const selector of metaImageSelectors) {
-          const meta = document.querySelector(selector)
-          if (meta?.content && meta.content.startsWith('http')) {
-            result.image = meta.content
-            break
-          }
-        }
-
-        return Object.keys(result).length ? result : null
       },
 
-      // Generic selectors (last resort)
-      () => {
+      // Meta tags strategy
+      metaTags: () => {
+
+        console.log(`Extracting product info using meta tags strategy`)
+
         const result = {}
-        
-        // Marketplace-specific name selectors
-        const nameSelectors = [
-          // Ozon
-          'h1[data-widget="webProductHeading"]',
-          // Wildberries
-          '.product-page__header h1',
-          // Yandex.Market
-          'h1[data-auto="headline"]',
-          'h1[itemprop="name"]',
-          // Generic
-          'h1[itemprop="name"]',
-          '.product-title',
-          '.product-name'
-        ]
-
-        // Marketplace-specific price selectors
-        const priceSelectors = [
-          // Ozon
-          '[data-widget="webPrice"] span',
-          // Wildberries
-          '.price-block__final-price',
-          // Yandex.Market
-          'div[data-auto="price"] span',
-          'span[itemprop="price"]',
-          // Generic
-          '.price',
-          '[itemprop="price"]'
-        ]
-
-        // Marketplace-specific image selectors
-        const imageSelectors = [
-          // Ozon
-          'img[src*="cdn"][src*="product"]',
-          'img[data-index="0"]',
-          // Wildberries
-          '.slide__content img',
-          '.photo-zoom__preview',
-          // Yandex.Market
-          'img[data-auto="product-image"]',
-          'img[itemprop="image"]',
-          'div[data-zone-name="gallery"] img[src]',
-          // Generic fallbacks
-          'img[itemprop="image"]',
-          '.product-image img'
-        ]
-
-        for (const selector of nameSelectors) {
-          const element = document.querySelector(selector)
-          if (element?.textContent) {
-            result.name = cleanText(element.textContent)
-            break
-          }
+        const selectors = {
+          title: ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]'],
+          price: ['meta[property="product:price:amount"]', 'meta[property="og:price:amount"]'],
+          currency: ['meta[property="product:price:currency"]', 'meta[property="og:price:currency"]'],
+          image: [
+            'meta[property="og:image:secure_url"]',
+            'meta[property="og:image"]',
+            'meta[property="product:image"]',
+            'meta[property="twitter:image"]'
+          ]
         }
 
-        for (const selector of priceSelectors) {
-          const element = document.querySelector(selector)
-          if (element) {
-            const priceText = element.getAttribute('content') || element.textContent
-            const price = extractPrice(priceText)
-            if (price) {
-              result.price = price
-              // Try to determine currency from the price text
-              if (priceText.includes('₽')) result.currency = 'RUB'
-              else if (priceText.includes('$')) result.currency = 'USD'
-              else if (priceText.includes('€')) result.currency = 'EUR'
+        for (const [key, selectorList] of Object.entries(selectors)) {
+          for (const selector of selectorList) {
+            const meta = document.querySelector(selector)
+            if (meta?.content) {
+              if (key === 'title') result.name = cleanText(meta.content)
+              else if (key === 'price') result.price = parseFloat(meta.content)
+              else if (key === 'currency') result.currency = meta.content
+              else if (key === 'image' && meta.content.startsWith('http')) result.image = meta.content
               break
             }
           }
         }
 
-        for (const selector of imageSelectors) {
-          const element = document.querySelector(selector)
-          const imgUrl = element?.src || element?.getAttribute('data-src') || element?.getAttribute('data-lazy-src')
-          if (imgUrl && imgUrl.startsWith('http')) {
-            result.image = imgUrl
-            break
-          }
-        }
-
         return Object.keys(result).length ? result : null
       }
-    ]
+    }
 
-    return strategies.reduce((result, strategy) => {
-      if (result && Object.keys(result).length) return result
-      return strategy() || {}
-    }, null)
-  }, marketplaces)
+    // Try each strategy in order until we get a result
+    for (const strategy of Object.values(strategies)) {
+      const result = strategy()
+      if (result && (result.name || result.price)) {
+        return result
+      }
+    }
+
+    return {}
+  }, marketplace)
 }
 
 // Add marketplace-specific URL validation
@@ -588,7 +521,7 @@ async function getOzonOrYandexMarketProductInfo(url){
   await configurePage(page)
   await navigateToUrl(page, url)
   
-  const productInfo = await extractProductInfo(page)
+  const productInfo = await extractProductInfo(page, Object.values(marketplaces).find(m => new URL(url).hostname.endsWith(m.domain)))
   
   logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
   return productInfo
