@@ -333,14 +333,12 @@ async function navigateToUrl(page, url) {
 }
 
 /**
- * Extract product information from the page using various strategies
+ * Extract product information from the page using JSON-LD data
  * @param {Page} page - Puppeteer page object
- * @param {Object} marketplace - Marketplace configuration object
  * @returns {Promise<{name: string, price: number, currency: string, image: string}>}
  */
-async function extractProductInfo(page, marketplace) {
-  return await page.evaluate((marketplace) => {
-    // Utility functions
+async function extractProductInfo(page) {
+  return await page.evaluate(() => {
     const cleanText = text => text
       .replace(/\s+/g, ' ')
       .trim()
@@ -350,114 +348,35 @@ async function extractProductInfo(page, marketplace) {
       .replace(/в интернет.*$/i, '')
       .trim()
 
-    const extractPrice = text => {
-      const numbers = text.replace(/[^\d.,]/g, '')
-      return numbers ? parseFloat(numbers.replace(',', '.')) : null
-    }
 
-    // Extraction strategies
-    const strategies = {
-      // JSON-LD strategy
-      jsonLd: () => {
-
-        console.log(`Extracting product info using JSON-LD strategy`)
-
-        const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]')
-        for (const element of jsonLdElements) {
-          try {
-            const data = JSON.parse(element.textContent)
-            if (data['@type'] === 'Product') {
-              return {
-                name: data.name ? cleanText(data.name) : null,
-                price: data.offers?.price || null,
-                currency: data.offers?.priceCurrency || null,
-                image: Array.isArray(data.image) ? data.image[0] : (typeof data.image === 'string' ? data.image : null)
-              }
-            }
-            if (Array.isArray(data)) {
-              const product = data.find(item => item['@type'] === 'Product')
-              if (product) {
-                return {
-                  name: product.name ? cleanText(product.name) : null,
-                  price: product.offers?.price || null,
-                  currency: product.offers?.priceCurrency || null,
-                  image: Array.isArray(product.image) ? product.image[0] : (typeof product.image === 'string' ? product.image : null)
-                }
-              }
-            }
-          } catch (e) {}
+    const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]')
+    for (const element of jsonLdElements) {
+      try {
+        const data = JSON.parse(element.textContent)
+        if (data['@type'] === 'Product') {
+          return {
+            name: data.name ? cleanText(data.name) : null,
+            price: data.offers?.price || null,
+            currency: data.offers?.priceCurrency || null,
+            image: Array.isArray(data.image) ? data.image[0] : (typeof data.image === 'string' ? data.image : null)
+          }
         }
-      },
-
-      // Marketplace-specific strategy
-      marketplaceSpecific: () => {
-        
-        console.log(`Extracting product info using marketplace-specific strategy`)
-
-        if (!marketplace?.selectors) return null
-        
-        const name = document.querySelector(marketplace.selectors.name)?.textContent
-        const priceElement = document.querySelector(marketplace.selectors.price)
-        const image = document.querySelector(marketplace.selectors.image)?.src
-
-        if (!name && !priceElement) return null
-
-        const priceText = priceElement?.textContent
-        const price = priceText ? extractPrice(priceText) : null
-
-        return {
-          name: name ? cleanText(name) : null,
-          price,
-          currency: 'RUB',
-          image
-        }
-      },
-
-      // Meta tags strategy
-      metaTags: () => {
-
-        console.log(`Extracting product info using meta tags strategy`)
-
-        const result = {}
-        const selectors = {
-          title: ['meta[property="og:title"]', 'meta[name="title"]', 'meta[property="product:title"]'],
-          price: ['meta[property="product:price:amount"]', 'meta[property="og:price:amount"]'],
-          currency: ['meta[property="product:price:currency"]', 'meta[property="og:price:currency"]'],
-          image: [
-            'meta[property="og:image:secure_url"]',
-            'meta[property="og:image"]',
-            'meta[property="product:image"]',
-            'meta[property="twitter:image"]'
-          ]
-        }
-
-        for (const [key, selectorList] of Object.entries(selectors)) {
-          for (const selector of selectorList) {
-            const meta = document.querySelector(selector)
-            if (meta?.content) {
-              if (key === 'title') result.name = cleanText(meta.content)
-              else if (key === 'price') result.price = parseFloat(meta.content)
-              else if (key === 'currency') result.currency = meta.content
-              else if (key === 'image' && meta.content.startsWith('http')) result.image = meta.content
-              break
+        if (Array.isArray(data)) {
+          const product = data.find(item => item['@type'] === 'Product')
+          if (product) {
+            return {
+              name: product.name ? cleanText(product.name) : null,
+              price: product.offers?.price || null,
+              currency: product.offers?.priceCurrency || null,
+              image: Array.isArray(product.image) ? product.image[0] : (typeof product.image === 'string' ? product.image : null)
             }
           }
         }
-
-        return Object.keys(result).length ? result : null
-      }
-    }
-
-    // Try each strategy in order until we get a result
-    for (const strategy of Object.values(strategies)) {
-      const result = strategy()
-      if (result && (result.name || result.price)) {
-        return result
-      }
+      } catch (e) {}
     }
 
     return {}
-  }, marketplace)
+  })
 }
 
 // Add marketplace-specific URL validation
@@ -521,7 +440,7 @@ async function getOzonOrYandexMarketProductInfo(url){
   await configurePage(page)
   await navigateToUrl(page, url)
   
-  const productInfo = await extractProductInfo(page, Object.values(marketplaces).find(m => new URL(url).hostname.endsWith(m.domain)))
+  const productInfo = await extractProductInfo(page)
   
   logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
   return productInfo
