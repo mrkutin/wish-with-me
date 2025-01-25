@@ -270,12 +270,11 @@ async function navigateToUrl(page, url) {
       'Upgrade-Insecure-Requests': '1'
     })
 
-    await page.waitForTimeout(Math.random() * 1000 + 500)
+    await delay(Math.random() * 1000 + 500)
   }
 
   if (marketplace?.domain === 'market.yandex.ru') {
-    // Initial delay before navigation
-    await delay(3000 + Math.random() * 2000);
+    await delay(3000 + Math.random() * 2000)
     
     await page.setExtraHTTPHeaders({
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -297,7 +296,7 @@ async function navigateToUrl(page, url) {
   })
 
   if (marketplace?.domain === 'wildberries.ru') {
-    await page.waitForTimeout(2000)
+    await delay(2000)
 
     await page.evaluate(() => {
       const scrollStep = 100
@@ -395,57 +394,6 @@ function isValidMarketplaceUrl(url) {
   }
 }
 
-async function getWildberriesProductInfo(url) {
-  try {
-    // Extract product ID from URL
-    const productId = url.match(/catalog\/(\d+)/)?.[1]
-    if (!productId) {
-      throw new Error('Could not extract product ID from URL')
-    }
-
-    // Use Wildberries mobile API
-    const apiUrl = `https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&spp=27&nm=${productId}`
-    const response = await fetch(apiUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`)
-    }
-
-    const data = await response.json()
-    const product = data.data.products?.[0]
-
-    if (!product) {
-      throw new Error('Product not found in API response')
-    }
-
-    return {
-      name: product.name,
-      price: product.salePriceU / 100, // Price comes in kopeks
-      currency: 'RUB',
-      image: `https://images.wbstatic.net/big/new/${Math.floor(productId/10000)}0000/${productId}-1.jpg`
-    }
-  } catch (error) {
-    logger.error('Failed to fetch Wildberries product info:', error)
-    return null
-  }
-}
-
-async function getOzonOrYandexMarketProductInfo(url){
-  page = await getPage()
-  await configurePage(page)
-  await navigateToUrl(page, url)
-  
-  const productInfo = await extractProductInfo(page)
-  
-  logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
-  return productInfo
-}
-
 async function extractItemInfoByUrl(url) {
   let page = null
   try {
@@ -454,17 +402,44 @@ async function extractItemInfoByUrl(url) {
       return null
     }
 
-    // Check if it's a Wildberries URL
     const domain = new URL(url).hostname
     const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
     
     logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
 
-    if (marketplace?.domain === 'wildberries.ru') {
-      return await getWildberriesProductInfo(url)
+    // Use Puppeteer for all marketplaces
+    page = await getPage()
+    await configurePage(page)
+    await navigateToUrl(page, url)
+    
+    // Extract product info using JSON-LD first
+    let productInfo = await extractProductInfo(page)
+
+    // If JSON-LD didn't work for Wildberries, try DOM selectors
+    if (marketplace?.domain === 'wildberries.ru' && (!productInfo?.name || !productInfo?.price)) {
+      productInfo = await page.evaluate(() => {
+        const name = document.querySelector('.product-page__header h1, .product-page h1, h1.same-part-kt__header')?.textContent?.trim()
+        const priceText = document.querySelector('.price-block__final-price, .price-block__price, span.price-block__final-price')?.textContent?.trim()
+        const image = document.querySelector('.slide__content img[src], .j-zoom-image[src], img.photo-zoom__preview[src]')?.src
+        
+        let price = null
+        if (priceText) {
+          const numericPrice = priceText.replace(/[^\d.,]/g, '').replace(',', '.')
+          price = parseFloat(numericPrice)
+        }
+
+        return {
+          name,
+          price,
+          currency: 'RUB',
+          image
+        }
+      })
     }
 
-    return getOzonOrYandexMarketProductInfo(url)
+    logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
+    return productInfo
+
   } catch (error) {
     logger.error(`Failed to extract info from URL: ${JSON.stringify({
       url,
@@ -474,7 +449,7 @@ async function extractItemInfoByUrl(url) {
         stack: error.stack
       }
     })}`)
-    throw error // Let the controller handle the error
+    throw error
   } finally {
     if (page) {
       await page.close().catch(error => {
