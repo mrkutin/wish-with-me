@@ -260,7 +260,7 @@ router.post('/resolve-item', async (req, res, next) => {
       throw new AppError(400, 'URL is required')
     }
 
-    const itemDetails = await browserService.extractNameFromUrl(url)
+    const itemDetails = await browserService.extractItemInfoByUrl(url)
     
     if (!itemDetails) {
       throw new AppError(400, 'Could not resolve item details from URL')

@@ -527,22 +527,6 @@ async function extractProductInfo(page) {
   }, marketplaces)
 }
 
-function extractNameFromUrlPath(url) {
-  const urlPath = new URL(url).pathname
-  const lastSegment = urlPath.split('/').filter(Boolean).pop()
-  
-  if (lastSegment) {
-    const nameFromUrl = lastSegment
-      .replace(/-/g, ' ')
-      .replace(/\d+$/, '')
-      .trim()
-    logger.info('Extracted name from URL:', { url, name: nameFromUrl })
-    return nameFromUrl
-  }
-  
-  return null
-}
-
 // Add marketplace-specific URL validation
 function isValidMarketplaceUrl(url) {
   try {
@@ -599,7 +583,18 @@ async function getWildberriesProductInfo(url) {
   }
 }
 
-async function extractNameFromUrl(url) {
+async function getOzonOrYandexMarketProductInfo(url){
+  page = await getPage()
+  await configurePage(page)
+  await navigateToUrl(page, url)
+  
+  const productInfo = await extractProductInfo(page)
+  
+  logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
+  return productInfo
+}
+
+async function extractItemInfoByUrl(url) {
   let page = null
   try {
     if (!isValidMarketplaceUrl(url)) {
@@ -611,65 +606,13 @@ async function extractNameFromUrl(url) {
     const domain = new URL(url).hostname
     const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
     
+    logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
+
     if (marketplace?.domain === 'wildberries.ru') {
       return await getWildberriesProductInfo(url)
     }
 
-    // Special retry logic for Yandex Market
-    if (marketplace?.domain === 'market.yandex.ru') {
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          if (page) {
-            await page.close();
-          }
-          
-          page = await getPage();
-          await configurePage(page);
-          
-          // Random delay before each attempt
-          await delay(2000 + Math.random() * 3000);
-          
-          await navigateToUrl(page, url);
-          const productInfo = await extractProductInfo(page);
-          
-          if (productInfo && (productInfo.name || productInfo.price)) {
-            logger.info(`Successfully extracted Yandex Market info on attempt ${retryCount + 1}`);
-            return productInfo;
-          }
-          
-          retryCount++;
-          if (retryCount < maxRetries) {
-            logger.warn(`Retrying Yandex Market extraction, attempt ${retryCount + 1} of ${maxRetries}`);
-            await delay(5000);
-          }
-        } catch (error) {
-          logger.error(`Failed attempt ${retryCount + 1} for Yandex Market:`, error);
-          retryCount++;
-          if (retryCount === maxRetries) {
-            throw error;
-          }
-        }
-      }
-    }
-
-    logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
-
-    page = await getPage()
-    await configurePage(page)
-    await navigateToUrl(page, url)
-    
-    const productInfo = await extractProductInfo(page)
-    
-    if (!productInfo.name) {
-      productInfo.name = extractNameFromUrlPath(url)
-    }
-
-    logger.info(`Successfully extracted product info: ${JSON.stringify({ url, productInfo })}`)
-    return productInfo
-
+    return getOzonOrYandexMarketProductInfo(url)
   } catch (error) {
     logger.error(`Failed to extract info from URL: ${JSON.stringify({
       url,
@@ -694,5 +637,5 @@ async function extractNameFromUrl(url) {
 module.exports = {
   initialize,
   cleanup,
-  extractNameFromUrl
+  extractItemInfoByUrl
 } 
