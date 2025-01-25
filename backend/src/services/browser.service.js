@@ -35,22 +35,59 @@ const marketplaces = {
   },
   YANDEX_MARKET: {
     domain: 'market.yandex.ru',
-    selectors: {
-      name: '[data-auto="product-headline"], [data-baobab-name="title"], h1',
-      price: '[data-auto="price-value"], [data-zone-name="price"]',
-      image: '[data-auto="product-image"], [data-zone-name="picture"] img'
-    },
     cookies: [
-      { name: 'yandex_login', value: '', domain: '.yandex.ru' },
-      { name: 'yandexmarket', value: '1', domain: '.market.yandex.ru' },
-      { name: '_ym_uid', value: Date.now().toString(), domain: '.market.yandex.ru' }
+      {
+        name: '_ym_uid',
+        value: Math.floor(Date.now() / 1000).toString(),
+        domain: '.market.yandex.ru'
+      },
+      {
+        name: '_ym_d',
+        value: Math.floor(Date.now() / 1000).toString(),
+        domain: '.market.yandex.ru'
+      },
+      {
+        name: 'yandexuid',
+        value: Math.floor(Date.now() / 1000).toString(),
+        domain: '.yandex.ru'
+      },
+      {
+        name: 'yuidss',
+        value: Math.floor(Math.random() * 1000000000).toString(),
+        domain: '.yandex.ru'
+      },
+      {
+        name: 'i',
+        value: Math.floor(Date.now() / 1000).toString(),
+        domain: '.yandex.ru'
+      },
+      {
+        name: 'yandex_gid',
+        value: '213',  // Moscow region
+        domain: '.yandex.ru'
+      },
+      {
+        name: '_ym_isad',
+        value: '2',
+        domain: '.market.yandex.ru'
+      }
     ],
-    parse: (document, { cleanText, extractPrice }) => ({
-      name: cleanText(document.querySelector('[data-auto="product-headline"], [data-baobab-name="title"], h1')?.textContent || ''),
-      price: extractPrice(document.querySelector('[data-auto="price-value"], [data-zone-name="price"]')?.textContent || ''),
-      currency: 'RUB',
-      image: document.querySelector('[data-auto="product-image"], [data-zone-name="picture"] img')?.src
-    })
+    selectors: {
+      name: 'h1[data-auto="headline"], h1[itemprop="name"], h1',
+      price: 'div[data-auto="price"] span, div[data-zone-name="price"] span, span[itemprop="price"]',
+      image: 'img[data-auto="product-image"], img[itemprop="image"], div[data-zone-name="gallery"] img[src]'
+    },
+    preNavigate: async (page) => {
+      await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true })
+      
+      await page.setUserAgent(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+      )
+      
+      await page.evaluateOnNewDocument(() => {
+        window.ontouchstart = null
+      })
+    }
   }
 }
 
@@ -200,11 +237,18 @@ async function configurePage(page) {
   })
 }
 
+// Helper function for delays
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function navigateToUrl(page, url) {
   const domain = new URL(url).hostname
   
   const marketplace = Object.values(marketplaces).find(m => domain.endsWith(m.domain))
   
+  if (marketplace?.preNavigate) {
+    await marketplace.preNavigate(page)
+  }
+
   if (marketplace?.cookies) {
     await page.setCookie(...marketplace.cookies)
   }
@@ -229,8 +273,26 @@ async function navigateToUrl(page, url) {
     await page.waitForTimeout(Math.random() * 1000 + 500)
   }
 
+  if (marketplace?.domain === 'market.yandex.ru') {
+    // Initial delay before navigation
+    await delay(3000 + Math.random() * 2000);
+    
+    await page.setExtraHTTPHeaders({
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'ru-RU,ru;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'DNT': '1',
+      'Referer': 'https://market.yandex.ru/',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-User': '?1'
+    })
+  }
+
   const response = await page.goto(url, {
-    waitUntil: ['domcontentloaded', 'networkidle0'],
+    waitUntil: marketplace?.domain === 'market.yandex.ru' ? 'domcontentloaded' : ['domcontentloaded', 'networkidle0'],
     timeout: 60000
   })
 
@@ -382,7 +444,8 @@ async function extractProductInfo(page) {
           // Wildberries
           '.product-page__header h1',
           // Yandex.Market
-          'h1._3TfWusA7bt',
+          'h1[data-auto="headline"]',
+          'h1[itemprop="name"]',
           // Generic
           'h1[itemprop="name"]',
           '.product-title',
@@ -396,7 +459,8 @@ async function extractProductInfo(page) {
           // Wildberries
           '.price-block__final-price',
           // Yandex.Market
-          'span[data-auto="price-value"]',
+          'div[data-auto="price"] span',
+          'span[itemprop="price"]',
           // Generic
           '.price',
           '[itemprop="price"]'
@@ -411,8 +475,9 @@ async function extractProductInfo(page) {
           '.slide__content img',
           '.photo-zoom__preview',
           // Yandex.Market
-          'img._3Wp5KMHYn1',
-          '.image_type_center img',
+          'img[data-auto="product-image"]',
+          'img[itemprop="image"]',
+          'div[data-zone-name="gallery"] img[src]',
           // Generic fallbacks
           'img[itemprop="image"]',
           '.product-image img'
@@ -550,6 +615,46 @@ async function extractNameFromUrl(url) {
       return await getWildberriesProductInfo(url)
     }
 
+    // Special retry logic for Yandex Market
+    if (marketplace?.domain === 'market.yandex.ru') {
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          if (page) {
+            await page.close();
+          }
+          
+          page = await getPage();
+          await configurePage(page);
+          
+          // Random delay before each attempt
+          await delay(2000 + Math.random() * 3000);
+          
+          await navigateToUrl(page, url);
+          const productInfo = await extractProductInfo(page);
+          
+          if (productInfo && (productInfo.name || productInfo.price)) {
+            logger.info(`Successfully extracted Yandex Market info on attempt ${retryCount + 1}`);
+            return productInfo;
+          }
+          
+          retryCount++;
+          if (retryCount < maxRetries) {
+            logger.warn(`Retrying Yandex Market extraction, attempt ${retryCount + 1} of ${maxRetries}`);
+            await delay(5000);
+          }
+        } catch (error) {
+          logger.error(`Failed attempt ${retryCount + 1} for Yandex Market:`, error);
+          retryCount++;
+          if (retryCount === maxRetries) {
+            throw error;
+          }
+        }
+      }
+    }
+
     logger.debug(`Starting extraction process: ${JSON.stringify({ url })}`)
 
     page = await getPage()
@@ -574,7 +679,7 @@ async function extractNameFromUrl(url) {
         stack: error.stack
       }
     })}`)
-    return null
+    throw error // Let the controller handle the error
   } finally {
     if (page) {
       await page.close().catch(error => {
