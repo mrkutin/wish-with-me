@@ -61,14 +61,14 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
     <div 
       className={`
         bg-background rounded-lg border transition-all duration-200
-        group hover:shadow-lg
+        group shadow-sm hover:shadow-lg
         ${
           {
-            'more-than-30': 'border-blue-200/30 hover:border-blue-300/40',
-            '7-30': 'border-orange-200/30 hover:border-orange-300/40',
-            'less-than-7': 'border-red-200/30 hover:border-red-300/40',
-            'no-date': 'border-gray-200/30 hover:border-gray-300/40',
-            'expired': 'border-gray-300/30 hover:border-gray-400/40'
+            'more-than-30': 'bg-blue-50/20 border-blue-200/30 hover:border-blue-300/40',
+            '7-30': 'bg-orange-50/20 border-orange-200/30 hover:border-orange-300/40',
+            'less-than-7': 'bg-red-50/20 border-red-200/30 hover:border-red-300/40',
+            'no-date': 'bg-gray-50/20 border-gray-200/30 hover:border-gray-300/40',
+            'expired': 'bg-gray-100/20 border-gray-300/30 hover:border-gray-400/40'
           }[status]
         }
       `}
