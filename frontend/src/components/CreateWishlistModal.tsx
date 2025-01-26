@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface CreateWishlistModalProps {
   isOpen: boolean
@@ -15,6 +16,8 @@ export default function CreateWishlistModal({ isOpen, onClose, onSubmit }: Creat
   const [dueDate, setDueDate] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEscapeKey(onClose)
 
   if (!isOpen) return null
 

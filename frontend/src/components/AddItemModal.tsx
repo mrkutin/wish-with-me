@@ -5,6 +5,7 @@ import { X, Link as LinkIcon, Type, Loader2, CheckCircle } from 'lucide-react'
 import { resolveUrl } from '@/app/api/resolveUrl'
 import ErrorToast from './ErrorToast'
 import SuccessToast from './SuccessToast'
+import { useEscapeKey } from '@/hooks/useEscapeKey'
 
 interface AddItemModalProps {
   isOpen: boolean
@@ -40,6 +41,8 @@ export default function AddItemModal({ isOpen, onClose, onSubmit }: AddItemModal
     currency: '',
     image: ''
   })
+
+  useEscapeKey(onClose)
 
   if (!isOpen) return null
 

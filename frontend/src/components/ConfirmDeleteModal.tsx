@@ -1,3 +1,5 @@
+import { useEscapeKey } from '@/hooks/useEscapeKey'
+
 interface ConfirmDeleteModalProps {
   isOpen: boolean
   onClose: () => void
@@ -15,6 +17,8 @@ export default function ConfirmDeleteModal({
   message,
   isLoading 
 }: ConfirmDeleteModalProps) {
+  useEscapeKey(onClose)
+
   if (!isOpen) return null
 
   return (
