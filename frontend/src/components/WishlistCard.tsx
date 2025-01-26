@@ -1,6 +1,7 @@
 import { Gift, Share2, Edit, Trash2, Link as LinkIcon, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
+import { useState, useEffect } from 'react'
 
 interface Wishlist {
   _id: string
@@ -29,14 +30,46 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
   const isUpcoming = wishlist.dueDate && 
     (new Date(wishlist.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 7
 
+  const getDueDateStatus = (dueDate?: string, daysRemaining?: number) => {
+    if (!dueDate) return 'no-date';
+    if (daysRemaining === undefined) {
+      daysRemaining = getDaysRemaining(dueDate);
+    }
+    if (daysRemaining < 0) return 'expired';
+    if (daysRemaining <= 7) return 'less-than-7';
+    if (daysRemaining <= 30) return '7-30';
+    return 'more-than-30';
+  };
+
+  const getDaysRemaining = (dueDate: string) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const timeDiff = due.getTime() - today.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+  };
+
+  const daysRemaining = wishlist.dueDate 
+    ? getDaysRemaining(wishlist.dueDate)
+    : null;
+
+  const status = getDueDateStatus(
+    wishlist.dueDate,
+    daysRemaining ?? undefined
+  );
+
   return (
     <div className={`
       bg-background rounded-lg border transition-all duration-200
-      ${isUpcoming 
-        ? 'border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]' 
-        : 'border-border hover:border-primary/20'
-      }
       group hover:shadow-lg
+      ${
+        {
+          'more-than-30': 'border-blue-200/30 hover:border-blue-300/40',
+          '7-30': 'border-orange-200/30 hover:border-orange-300/40',
+          'less-than-7': 'border-red-200/30 hover:border-red-300/40',
+          'no-date': 'border-gray-200/30 hover:border-gray-300/40',
+          'expired': 'border-gray-300/30 hover:border-gray-400/40'
+        }[status]
+      }
     `}>
       <div className="p-6 flex flex-col h-full min-h-[180px]">
         <div className="flex-1">
@@ -100,15 +133,32 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
               {formattedDate && (
                 <div className={`
                   flex items-center text-xs
-                  ${isUpcoming ? 'text-primary' : 'text-text-secondary'}
+                  ${
+                    {
+                      'more-than-30': 'text-blue-600',
+                      '7-30': 'text-orange-600',
+                      'less-than-7': 'text-red-600',
+                      'expired': 'text-gray-500',
+                      'no-date': 'text-gray-500'
+                    }[status]
+                  }
                 `}>
                   <Calendar className="h-3.5 w-3.5 mr-1" />
                   <span>{formattedDate}</span>
-                  {isUpcoming && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] font-medium">
-                      Coming soon
-                    </span>
-                  )}
+                  <span className={`
+                    ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-medium
+                    ${
+                      {
+                        'more-than-30': 'bg-blue-100 text-blue-800',
+                        '7-30': 'bg-orange-100 text-orange-800',
+                        'less-than-7': 'bg-red-100 text-red-800',
+                        'expired': 'bg-gray-100 text-gray-800',
+                        'no-date': 'bg-gray-100 text-gray-800'
+                      }[status]
+                    }
+                  `}>
+                    {status === 'expired' ? 'Expired' : `${daysRemaining} days left`}
+                  </span>
                 </div>
               )}
             </div>

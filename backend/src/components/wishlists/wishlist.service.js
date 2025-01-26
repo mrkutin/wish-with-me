@@ -42,13 +42,22 @@ class WishlistService {
   async getWishlists(userId) {
     try {
       const db = dbClient.client.use('wishlists')
-      const query = {
-        selector: {
-          userId: userId
-        }
-      }
-      const result = await db.find(query)
-      return result.docs
+      const result = await db.find({
+        selector: { userId },
+        use_index: "user-id-index",
+        sort: [{'userId': 'asc'}]
+      })
+      
+      return result.docs.sort((a, b) => {
+        // Handle wishlists without due dates
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1; // Push to bottom
+        if (!b.dueDate) return -1; // Keep a above b
+        
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
+        return dateA - dateB; // Ascending order
+      });
     } catch (error) {
       logger.error(`Failed to get wishlists: ${JSON.stringify(error)}`)
       throw new AppError(500, 'Failed to get wishlists')
@@ -134,18 +143,16 @@ class WishlistService {
     }
   }
 
-  async addItem(wishlistId, userId, itemData) {
+  async addItem(userId, wishlistId, itemData) {
     try {
-      // First check if wishlist exists and user has access
-      const wishlist = await dbClient.getDocument('wishlists', wishlistId)
+      const wishlist = await this.getWishlistById(wishlistId, userId);
       
-      if (!wishlist) {
-        throw new AppError(404, 'Wishlist not found')
-      }
-
-      if (wishlist.userId !== userId) {
-        throw new AppError(403, 'Not authorized to modify this wishlist')
-      }
+      // Preserve existing fields during update
+      const updatedWishlist = {
+        ...wishlist, // Maintain all existing properties
+        items: [...wishlist.items], 
+        updatedAt: new Date().toISOString()
+      };
 
       // Validate required fields
       if (!itemData.name) {
@@ -169,11 +176,11 @@ class WishlistService {
         newItem[key] === undefined && delete newItem[key]
       )
 
-      wishlist.items.push(newItem)
-      wishlist.updatedAt = new Date().toISOString()
+      updatedWishlist.items.push(newItem)
+      updatedWishlist.updatedAt = new Date().toISOString()
 
       try {
-        await dbClient.updateDocument('wishlists', wishlistId, wishlist)
+        await dbClient.updateDocument('wishlists', wishlistId, updatedWishlist)
         return newItem
       } catch (dbError) {
         logger.error('Database error while adding item:', {
