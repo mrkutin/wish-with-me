@@ -6,12 +6,13 @@ import { X } from 'lucide-react'
 interface CreateWishlistModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (name: string, description: string) => Promise<void>
+  onSubmit: (name: string, description: string, dueDate?: string) => Promise<void>
 }
 
 export default function CreateWishlistModal({ isOpen, onClose, onSubmit }: CreateWishlistModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,9 +24,10 @@ export default function CreateWishlistModal({ isOpen, onClose, onSubmit }: Creat
     setIsLoading(true)
 
     try {
-      await onSubmit(name, description)
+      await onSubmit(name, description, dueDate || undefined)
       setName('')
       setDescription('')
+      setDueDate('')
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create wishlist')
@@ -80,6 +82,20 @@ export default function CreateWishlistModal({ isOpen, onClose, onSubmit }: Creat
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background-alt"
               placeholder="Things I'd love to receive for my birthday"
               rows={3}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="dueDate" className="block text-sm font-medium text-text-primary mb-1">
+              Due Date (optional)
+            </label>
+            <input
+              type="date"
+              id="dueDate"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 bg-background-alt"
+              min={new Date().toISOString().split('T')[0]}
             />
           </div>
 

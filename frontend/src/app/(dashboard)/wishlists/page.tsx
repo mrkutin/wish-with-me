@@ -12,11 +12,13 @@ import ErrorToast from '@/components/ErrorToast'
 import DropdownMenu from '@/components/DropdownMenu'
 import CreateWishlistModal from '@/components/CreateWishlistModal'
 import Cookies from 'js-cookie'
+import { WishlistCard } from '@/components/WishlistCard'
 
 interface Wishlist {
   _id: string
   name: string
   description?: string
+  dueDate?: string
   items: WishlistItem[]
   createdAt: string
   updatedAt: string
@@ -69,6 +71,7 @@ export default function WishlistsPage() {
         }
 
         const data = await res.json()
+        console.log('Fetched wishlists:', data)
         if (!ignore) {
           setWishlists(data)
         }
@@ -88,7 +91,7 @@ export default function WishlistsPage() {
     }
   }, [authLoading, router])
 
-  async function handleCreateWishlist(name: string, description: string) {
+  async function handleCreateWishlist(name: string, description: string, dueDate?: string) {
     const token = Cookies.get('token')
     if (!token) {
       router.push('/login')
@@ -101,7 +104,7 @@ export default function WishlistsPage() {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ name, description })
+      body: JSON.stringify({ name, description, dueDate })
     })
 
     if (!res.ok) {
@@ -213,56 +216,6 @@ export default function WishlistsPage() {
     )
   }
 
-  const renderWishlistCard = (wishlist: Wishlist) => (
-    <div key={wishlist._id} className="bg-background rounded-lg border border-border hover:border-primary/20 transition-colors group">
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <Gift className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-medium text-text-primary">
-                <Link href={`/wishlists/${wishlist._id}`} className="hover:text-primary transition-colors">
-                  {wishlist.name}
-                </Link>
-              </h3>
-            </div>
-            {wishlist.description && (
-              <p className="mt-1 text-text-secondary text-sm">{wishlist.description}</p>
-            )}
-          </div>
-          <DropdownMenu
-            actions={[
-              {
-                label: 'Edit',
-                icon: <Edit className="h-4 w-4" />,
-                onClick: () => {/* TODO: Implement edit */}
-              },
-              {
-                label: 'Share',
-                icon: <Share2 className="h-4 w-4" />,
-                onClick: () => {/* TODO: Implement share */}
-              },
-              {
-                label: 'Copy Link',
-                icon: <LinkIcon className="h-4 w-4" />,
-                onClick: () => {/* TODO: Implement copy link */}
-              },
-              {
-                label: 'Delete',
-                icon: <Trash2 className="h-4 w-4" />,
-                onClick: () => handleDeleteWishlist(wishlist),
-                variant: 'danger'
-              }
-            ]}
-          />
-        </div>
-        <div className="mt-4 flex items-center justify-between text-sm text-text-secondary">
-          <div>{wishlist.items.length} items</div>
-        </div>
-      </div>
-    </div>
-  )
-
   return (
     <>
       <div className="min-h-screen bg-background-alt">
@@ -296,7 +249,13 @@ export default function WishlistsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishlists.map((wishlist) => renderWishlistCard(wishlist))}
+                {wishlists.map((wishlist) => (
+                  <WishlistCard
+                    key={wishlist._id}
+                    wishlist={wishlist}
+                    onDelete={handleDeleteWishlist}
+                  />
+                ))}
               </div>
             </div>
           )}
