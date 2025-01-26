@@ -8,6 +8,8 @@ interface Wishlist {
   description?: string
   dueDate?: string
   items: Array<{ _id: string; name: string }>
+  createdAt: string
+  updatedAt: string
 }
 
 interface WishlistCardProps {
