@@ -17,7 +17,8 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
     ? new Date(wishlist.dueDate).toLocaleDateString(undefined, { 
         month: 'short', 
         day: 'numeric', 
-        year: 'numeric' 
+        year: 'numeric',
+        timeZone: 'UTC'
       })
     : null
 
