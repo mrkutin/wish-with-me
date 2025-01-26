@@ -3,6 +3,7 @@ import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
 import { useState, useEffect } from 'react'
 import { Wishlist } from '@/types/wishlist'
+import { useRouter } from 'next/navigation'
 
 interface WishlistCardProps {
   wishlist: Wishlist
@@ -10,6 +11,8 @@ interface WishlistCardProps {
 }
 
 export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
+  const router = useRouter()
+
   const formattedDate = wishlist.dueDate 
     ? new Date(wishlist.dueDate).toLocaleDateString(undefined, { 
         month: 'short', 
@@ -48,20 +51,31 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
     daysRemaining ?? undefined
   );
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.dropdown-container')) return
+    router.push(`/wishlists/${wishlist._id}`)
+  }
+
   return (
-    <div className={`
-      bg-background rounded-lg border transition-all duration-200
-      group hover:shadow-lg
-      ${
-        {
-          'more-than-30': 'border-blue-200/30 hover:border-blue-300/40',
-          '7-30': 'border-orange-200/30 hover:border-orange-300/40',
-          'less-than-7': 'border-red-200/30 hover:border-red-300/40',
-          'no-date': 'border-gray-200/30 hover:border-gray-300/40',
-          'expired': 'border-gray-300/30 hover:border-gray-400/40'
-        }[status]
-      }
-    `}>
+    <div 
+      className={`
+        bg-background rounded-lg border transition-all duration-200
+        group hover:shadow-lg
+        ${
+          {
+            'more-than-30': 'border-blue-200/30 hover:border-blue-300/40',
+            '7-30': 'border-orange-200/30 hover:border-orange-300/40',
+            'less-than-7': 'border-red-200/30 hover:border-red-300/40',
+            'no-date': 'border-gray-200/30 hover:border-gray-300/40',
+            'expired': 'border-gray-300/30 hover:border-gray-400/40'
+          }[status]
+        }
+      `}
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && router.push(`/wishlists/${wishlist._id}`)}
+    >
       <div className="p-6 flex flex-col h-full min-h-[180px]">
         <div className="flex-1">
           <div className="flex items-start justify-between">
@@ -71,12 +85,7 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
                   <Gift className="h-5 w-5 text-primary" />
                 </div>
                 <h3 className="text-lg font-medium text-text-primary truncate">
-                  <Link 
-                    href={`/wishlists/${wishlist._id}`} 
-                    className="hover:text-primary transition-colors"
-                  >
-                    {wishlist.name}
-                  </Link>
+                  {wishlist.name}
                 </h3>
               </div>
               {wishlist.description && (
@@ -85,7 +94,7 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
                 </p>
               )}
             </div>
-            <div className="ml-4 flex-shrink-0">
+            <div className="ml-4 flex-shrink-0 dropdown-container">
               <DropdownMenu
                 actions={[
                   {
