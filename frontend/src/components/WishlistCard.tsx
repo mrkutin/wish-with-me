@@ -2,16 +2,7 @@ import { Gift, Share2, Edit, Trash2, Link as LinkIcon, Calendar } from 'lucide-r
 import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
 import { useState, useEffect } from 'react'
-
-interface Wishlist {
-  _id: string
-  name: string
-  description?: string
-  dueDate?: string
-  items: Array<{ _id: string; name: string }>
-  createdAt: string
-  updatedAt: string
-}
+import { Wishlist } from '@/types/wishlist'
 
 interface WishlistCardProps {
   wishlist: Wishlist

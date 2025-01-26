@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Gift, Share2, Edit, Trash2, Link as LinkIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -13,21 +13,22 @@ import DropdownMenu from '@/components/DropdownMenu'
 import CreateWishlistModal from '@/components/CreateWishlistModal'
 import Cookies from 'js-cookie'
 import { WishlistCard } from '@/components/WishlistCard'
-
-interface Wishlist {
-  _id: string
-  name: string
-  description?: string
-  dueDate?: string
-  items: WishlistItem[]
-  createdAt: string
-  updatedAt: string
-}
+import { Wishlist } from '@/types/wishlist'
+import { sortWishlists } from '@/utils/sortWishlists'
 
 interface WishlistItem {
   _id: string
   name: string
   // ... other item properties
+}
+
+// Memoized sorting
+const useSortedWishlists = (wishlists: Wishlist[]) => {
+  const sorter = useCallback(
+    (items: Wishlist[]) => sortWishlists(items),
+    []
+  )
+  return sorter(wishlists)
 }
 
 export default function WishlistsPage() {
@@ -204,6 +205,8 @@ export default function WishlistsPage() {
     }
   }
 
+  const sortedWishlists = useSortedWishlists(wishlists)
+
   if (authLoading || isLoadingWishlists) {
     return (
       <div className="min-h-screen bg-background-alt">
@@ -259,7 +262,7 @@ export default function WishlistsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishlists.map((wishlist) => (
+                {sortedWishlists.map((wishlist) => (
                   <WishlistCard
                     key={wishlist._id}
                     wishlist={wishlist}
