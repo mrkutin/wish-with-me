@@ -205,6 +205,28 @@ export default function WishlistsPage() {
     }
   }
 
+  // Add this function to trigger data refresh
+  const handleWishlistUpdate = async () => {
+    try {
+      const token = Cookies.get('token')
+      if (!token) return
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-store'
+        }
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setWishlists(sortWishlists(data))
+      }
+    } catch (error) {
+      console.error('Failed to refresh wishlists:', error)
+    }
+  }
+
   const sortedWishlists = useSortedWishlists(wishlists)
 
   if (authLoading || isLoadingWishlists) {
@@ -267,6 +289,7 @@ export default function WishlistsPage() {
                     key={wishlist._id}
                     wishlist={wishlist}
                     onDelete={handleDeleteWishlist}
+                    onUpdate={handleWishlistUpdate}
                   />
                 ))}
               </div>

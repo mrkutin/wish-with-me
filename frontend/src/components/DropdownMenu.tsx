@@ -9,10 +9,15 @@ interface DropdownAction {
 }
 
 interface DropdownMenuProps {
-  actions: DropdownAction[]
+  items: Array<{
+    label: string
+    icon: React.ElementType
+    onClick: () => void
+    variant?: 'default' | 'danger'
+  }>
 }
 
-export default function DropdownMenu({ actions }: DropdownMenuProps) {
+export default function DropdownMenu({ items }: DropdownMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -39,18 +44,18 @@ export default function DropdownMenu({ actions }: DropdownMenuProps) {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border z-10">
           <div className="py-1">
-            {actions.map((action, index) => (
+            {items.map((item, index) => (
               <button
                 key={index}
                 onClick={() => {
-                  action.onClick()
+                  item.onClick()
                   setIsOpen(false)
                 }}
                 className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-background-alt transition-colors
-                  ${action.variant === 'danger' ? 'text-error' : 'text-text-primary'}`}
+                  ${item.variant === 'danger' ? 'text-error' : 'text-text-primary'}`}
               >
-                {action.icon && <span className="w-4 h-4">{action.icon}</span>}
-                <span>{action.label}</span>
+                {item.icon && <item.icon className="h-4 w-4" />}
+                <span>{item.label}</span>
               </button>
             ))}
           </div>

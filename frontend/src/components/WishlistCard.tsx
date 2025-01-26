@@ -4,17 +4,26 @@ import DropdownMenu from './DropdownMenu'
 import { useState, useEffect } from 'react'
 import { Wishlist } from '@/types/wishlist'
 import { useRouter } from 'next/navigation'
+import EditWishlistModal from '@/components/EditWishlistModal'
+import Cookies from 'js-cookie'
 
 interface WishlistCardProps {
   wishlist: Wishlist
   onDelete: (wishlist: Wishlist) => void
+  onUpdate?: () => void
 }
 
-export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
+export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps) {
   const router = useRouter()
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [currentWishlist, setCurrentWishlist] = useState(wishlist)
 
-  const formattedDate = wishlist.dueDate 
-    ? new Date(wishlist.dueDate).toLocaleDateString(undefined, { 
+  useEffect(() => {
+    setCurrentWishlist(wishlist)
+  }, [wishlist])
+
+  const formattedDate = currentWishlist.dueDate 
+    ? new Date(currentWishlist.dueDate).toLocaleDateString(undefined, { 
         month: 'short', 
         day: 'numeric', 
         year: 'numeric',
@@ -22,8 +31,8 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
       })
     : null
 
-  const isUpcoming = wishlist.dueDate && 
-    (new Date(wishlist.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 7
+  const isUpcoming = currentWishlist.dueDate && 
+    (new Date(currentWishlist.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24) <= 7
 
   const getDueDateStatus = (dueDate?: string, daysRemaining?: number) => {
     if (!dueDate) return 'no-date';
@@ -43,131 +52,174 @@ export function WishlistCard({ wishlist, onDelete }: WishlistCardProps) {
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
   };
 
-  const daysRemaining = wishlist.dueDate 
-    ? getDaysRemaining(wishlist.dueDate)
+  const daysRemaining = currentWishlist.dueDate 
+    ? getDaysRemaining(currentWishlist.dueDate)
     : null;
 
   const status = getDueDateStatus(
-    wishlist.dueDate,
+    currentWishlist.dueDate,
     daysRemaining ?? undefined
   );
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.dropdown-container')) return
-    router.push(`/wishlists/${wishlist._id}`)
+    router.push(`/wishlists/${currentWishlist._id}`)
+  }
+
+  const handleEdit = async (data: { name: string; description: string; dueDate?: string | null }) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${currentWishlist._id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...data,
+          dueDate: data.dueDate || null
+        })
+      })
+
+      if (!res.ok) throw new Error('Update failed')
+      
+      setCurrentWishlist(prev => ({
+        ...prev,
+        ...data,
+        dueDate: data.dueDate || undefined,
+        updatedAt: new Date().toISOString()
+      }))
+      
+      onUpdate?.()
+    } catch (error) {
+      console.error('Failed to update wishlist:', error)
+      throw error
+    }
   }
 
   return (
-    <div className="h-full">
-      <div 
-        className={`
-          bg-background rounded-lg border transition-all duration-200
-          group shadow-sm hover:shadow-lg
-          ${
-            {
-              'more-than-30': 'bg-blue-50/20 border-blue-200/30 hover:border-blue-300/40',
-              '7-30': 'bg-orange-50/20 border-orange-200/30 hover:border-orange-300/40',
-              'less-than-7': 'bg-red-50/20 border-red-200/30 hover:border-red-300/40',
-              'no-date': 'bg-gray-50/20 border-gray-200/30 hover:border-gray-300/40',
-              'expired': 'bg-gray-100/20 border-gray-300/30 hover:border-gray-400/40'
-            }[status]
-          }
-        `}
-        onClick={handleCardClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && router.push(`/wishlists/${wishlist._id}`)}
-      >
-        <div className="p-6 flex flex-col h-full min-h-[180px]">
-          <div className="flex-1">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="flex-shrink-0">
-                    <Gift className="h-5 w-5 text-primary" />
+    <>
+      <div className="h-full">
+        <div 
+          className={`
+            bg-background rounded-lg border transition-all duration-200
+            group shadow-sm hover:shadow-lg
+            ${
+              {
+                'more-than-30': 'bg-blue-50/20 border-blue-200/30 hover:border-blue-300/40',
+                '7-30': 'bg-orange-50/20 border-orange-200/30 hover:border-orange-300/40',
+                'less-than-7': 'bg-red-50/20 border-red-200/30 hover:border-red-300/40',
+                'no-date': 'bg-gray-50/20 border-gray-200/30 hover:border-gray-300/40',
+                'expired': 'bg-gray-100/20 border-gray-300/30 hover:border-gray-400/40'
+              }[status]
+            }
+          `}
+          onClick={handleCardClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && router.push(`/wishlists/${currentWishlist._id}`)}
+        >
+          <div className="p-6 flex flex-col h-full min-h-[180px]">
+            <div className="flex-1">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex-shrink-0">
+                      <Gift className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-medium text-text-primary truncate">
+                      {currentWishlist.name}
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-medium text-text-primary truncate">
-                    {wishlist.name}
-                  </h3>
+                  {currentWishlist.description && (
+                    <p className="mt-1 text-text-secondary text-sm line-clamp-2">
+                      {currentWishlist.description}
+                    </p>
+                  )}
                 </div>
-                {wishlist.description && (
-                  <p className="mt-1 text-text-secondary text-sm line-clamp-2">
-                    {wishlist.description}
-                  </p>
-                )}
-              </div>
-              <div className="ml-4 flex-shrink-0 dropdown-container">
-                <DropdownMenu
-                  actions={[
-                    {
-                      label: 'Edit',
-                      icon: <Edit className="h-4 w-4" />,
-                      onClick: () => {/* TODO: Implement edit */}
-                    },
-                    {
-                      label: 'Share',
-                      icon: <Share2 className="h-4 w-4" />,
-                      onClick: () => {/* TODO: Implement share */}
-                    },
-                    {
-                      label: 'Copy Link',
-                      icon: <LinkIcon className="h-4 w-4" />,
-                      onClick: () => {/* TODO: Implement copy link */}
-                    },
-                    {
-                      label: 'Delete',
-                      icon: <Trash2 className="h-4 w-4" />,
-                      onClick: () => onDelete(wishlist),
-                      variant: 'danger'
-                    }
-                  ]}
-                />
+                <div className="ml-4 flex-shrink-0 dropdown-container">
+                  <DropdownMenu
+                    items={[
+                      {
+                        label: 'Edit',
+                        icon: Edit,
+                        onClick: () => setShowEditModal(true)
+                      },
+                      {
+                        label: 'Share',
+                        icon: Share2,
+                        onClick: () => {/* TODO: Implement share */}
+                      },
+                      {
+                        label: 'Copy Link',
+                        icon: LinkIcon,
+                        onClick: () => {/* TODO: Implement copy link */}
+                      },
+                      {
+                        label: 'Delete',
+                        icon: Trash2,
+                        onClick: () => onDelete(currentWishlist),
+                        variant: 'danger'
+                      }
+                    ]}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <div className="pt-3 border-t border-border">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center text-text-secondary">
-                  <span className="font-medium text-text-primary">{wishlist.items.length}</span>
-                  <span className="ml-1">items</span>
-                </div>
-                {formattedDate && (
-                  <div className={`
-                    flex items-center text-xs
-                    ${
-                      {
-                        'more-than-30': 'text-blue-600',
-                        '7-30': 'text-orange-600',
-                        'less-than-7': 'text-red-600',
-                        'expired': 'text-gray-500',
-                        'no-date': 'text-gray-500'
-                      }[status]
-                    }
-                  `}>
-                    <Calendar className="h-3.5 w-3.5 mr-1" />
-                    <span>{formattedDate}</span>
-                    <span className={`
-                      ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-medium
+            <div className="mt-4">
+              <div className="pt-3 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center text-text-secondary">
+                    <span className="font-medium text-text-primary">{currentWishlist.items.length}</span>
+                    <span className="ml-1">items</span>
+                  </div>
+                  {formattedDate && (
+                    <div className={`
+                      flex items-center text-xs
                       ${
                         {
-                          'more-than-30': 'bg-blue-100 text-blue-800',
-                          '7-30': 'bg-orange-100 text-orange-800',
-                          'less-than-7': 'bg-red-100 text-red-800',
-                          'expired': 'bg-gray-100 text-gray-800',
-                          'no-date': 'bg-gray-100 text-gray-800'
+                          'more-than-30': 'text-blue-600',
+                          '7-30': 'text-orange-600',
+                          'less-than-7': 'text-red-600',
+                          'expired': 'text-gray-500',
+                          'no-date': 'text-gray-500'
                         }[status]
                       }
                     `}>
-                      {status === 'expired' ? 'Expired' : `${daysRemaining} days left`}
-                    </span>
-                  </div>
-                )}
+                      <Calendar className="h-3.5 w-3.5 mr-1" />
+                      <span>{formattedDate}</span>
+                      <span className={`
+                        ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-medium
+                        ${
+                          {
+                            'more-than-30': 'bg-blue-100 text-blue-800',
+                            '7-30': 'bg-orange-100 text-orange-800',
+                            'less-than-7': 'bg-red-100 text-red-800',
+                            'expired': 'bg-gray-100 text-gray-800',
+                            'no-date': 'bg-gray-100 text-gray-800'
+                          }[status]
+                        }
+                      `}>
+                        {status === 'expired' ? 'Expired' : `${daysRemaining} days left`}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      
+      <EditWishlistModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSubmit={handleEdit}
+        initialData={{
+          name: currentWishlist.name,
+          description: currentWishlist.description,
+          dueDate: currentWishlist.dueDate
+        }}
+      />
+    </>
   )
 } 

@@ -90,7 +90,6 @@ class WishlistService {
 
   async updateWishlist(wishlistId, userId, data) {
     try {
-      // Get wishlist to verify it exists and check ownership
       const wishlist = await dbClient.getDocument('wishlists', wishlistId)
       if (!wishlist) {
         throw new AppError(404, 'Wishlist not found')
@@ -104,6 +103,7 @@ class WishlistService {
         ...wishlist,
         name: data.name || wishlist.name,
         description: data.description || wishlist.description,
+        dueDate: data.dueDate || wishlist.dueDate,
         updatedAt: new Date().toISOString()
       }
 
