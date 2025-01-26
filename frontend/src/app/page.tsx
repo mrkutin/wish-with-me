@@ -4,6 +4,8 @@ import { Plus, ArrowRight, Star } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useState, useEffect } from 'react'
+import Cookies from 'js-cookie'
 
 // Define proper types for SVG props
 interface SVGProps extends React.SVGProps<SVGSVGElement> {
@@ -27,6 +29,38 @@ interface Testimonial {
 
 export default function HomePage() {
   const { user, loading } = useAuth()
+  const [hasWishlists, setHasWishlists] = useState(false)
+  const [checkingWishlists, setCheckingWishlists] = useState(true)
+
+  useEffect(() => {
+    const checkWishlists = async () => {
+      try {
+        const token = Cookies.get('token')
+        if (!token) {
+          setCheckingWishlists(false)
+          return
+        }
+        
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-store'
+          }
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setHasWishlists(data.length > 0)
+        }
+      } catch (error) {
+        console.error('Failed to check wishlists:', error)
+      } finally {
+        setCheckingWishlists(false)
+      }
+    }
+
+    if (user) checkWishlists()
+  }, [user])
 
   const features: Feature[] = [
     {
@@ -118,8 +152,12 @@ export default function HomePage() {
                   href="/wishlists"
                   className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Wishlist
+                  {hasWishlists ? 'My Wishlists' : 'Create Wishlist'}
+                  {hasWishlists ? (
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  ) : (
+                    <Plus className="ml-2 h-4 w-4" />
+                  )}
                 </Link>
               )}
             </div>

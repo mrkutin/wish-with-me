@@ -44,11 +44,11 @@ export default function MarketingPage() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
-                href="/login"
-                className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
+                href="/wishlists"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
-                Create your wishlist
-                <ArrowRight className="ml-2 inline-block h-4 w-4" />
+                My Wishlists
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="/about"

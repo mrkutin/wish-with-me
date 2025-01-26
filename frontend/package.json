@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rm -rf .next/ node_modules/ && npm install"
   },
   "dependencies": {
     "js-cookie": "^3.0.5",
