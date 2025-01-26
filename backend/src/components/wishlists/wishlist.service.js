@@ -11,6 +11,7 @@ class WishlistService {
         userId,
         name: data.name,
         description: data.description,
+        dueDate: data.dueDate,
         items: [],
         sharedWith: [],
         createdAt: new Date().toISOString(),
