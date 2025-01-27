@@ -16,6 +16,12 @@ const config = convict({
     default: 3000,
     env: 'PORT'
   },
+  baseUrl: {
+    doc: 'Base URL for generating share links',
+    format: String,
+    default: 'http://localhost:3000',
+    env: 'BASE_URL'
+  },
   couchdb: {
     url: {
       doc: 'CouchDB connection URL',
@@ -26,15 +32,14 @@ const config = convict({
     username: {
       doc: 'CouchDB username',
       format: String,
-      default: '',
+      default: 'admin',
       env: 'COUCHDB_USERNAME'
     },
     password: {
       doc: 'CouchDB password',
       format: String,
-      default: '',
-      env: 'COUCHDB_PASSWORD',
-      sensitive: true
+      default: 'password',
+      env: 'COUCHDB_PASSWORD'
     },
     databases: {
       users: {
@@ -58,7 +63,7 @@ const config = convict({
     }
   },
   logLevel: {
-    doc: 'The logging level',
+    doc: 'Logging level',
     format: ['fatal', 'error', 'warn', 'info', 'debug', 'trace'],
     default: 'info',
     env: 'LOG_LEVEL'

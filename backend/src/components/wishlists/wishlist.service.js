@@ -2,40 +2,38 @@ const dbClient = require('../../db/client')
 const { AppError } = require('../../middleware/error-handler')
 const logger = require('../../utils/logger')
 const browserService = require('../../services/browser.service')
+const crypto = require('crypto')
+const config = require('../../config')
 
 class WishlistService {
   async createWishlist(userId, data) {
-    try {
-      const wishlist = {
-        _id: await dbClient.getUUID(),
-        userId,
-        name: data.name,
-        description: data.description || '',
-        dueDate: data.dueDate || null,
-        items: [],
-        sharedWith: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
+    const shareToken = crypto.randomBytes(16).toString('hex')
+    const wishlist = {
+      _id: await dbClient.getUUID(),
+      userId,
+      name: data.name,
+      description: data.description || '',
+      dueDate: data.dueDate || null,
+      items: [],
+      sharedWith: [],
+      sharedLink: `${config.get('baseUrl')}/share/${shareToken}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
-      try {
-        const db = dbClient.client.use('wishlists')
-        const response = await db.insert(wishlist)
-        return {
-          ...wishlist,
-          _rev: response.rev
-        }
-      } catch (dbError) {
-        logger.error(`Database error details: ${JSON.stringify({
-          error: dbError,
-          document: wishlist
-        })}`)
-        throw new AppError(500, 'Database operation failed')
+    try {
+      const db = dbClient.client.use('wishlists')
+      const response = await db.insert(wishlist)
+      return {
+        ...wishlist,
+        _rev: response.rev
       }
-    } catch (error) {
-      if (error instanceof AppError) throw error
-      logger.error(`Failed to create wishlist: ${JSON.stringify(error)}`)
-      throw new AppError(500, 'Failed to create wishlist')
+    } catch (dbError) {
+      logger.error(`Database error details: ${JSON.stringify({
+        error: dbError,
+        document: wishlist
+      })}`)
+      throw new AppError(500, 'Database operation failed')
     }
   }
 
@@ -404,6 +402,19 @@ class WishlistService {
         }
       })}`)
       throw new AppError(500, 'Failed to update item in wishlist')
+    }
+  }
+
+  async getWishlistByToken(token) {
+    try {
+      const db = dbClient.client.use('wishlists')
+      const result = await db.find({
+        selector: { sharedLink: `${process.env.BASE_URL}/share/${token}` },
+        limit: 1
+      })
+      return result.docs[0] || null
+    } catch (error) {
+      throw new AppError(500, 'Failed to fetch shared wishlist')
     }
   }
 }

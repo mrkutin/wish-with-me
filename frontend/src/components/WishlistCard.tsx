@@ -6,6 +6,10 @@ import { Wishlist } from '@/types/wishlist'
 import { useRouter } from 'next/navigation'
 import EditWishlistModal from '@/components/EditWishlistModal'
 import Cookies from 'js-cookie'
+import { QRCode } from 'react-qrcode-logo'
+import { Copy } from 'lucide-react'
+import Modal from '@/components/Modal'
+import Button from '@/components/Button'
 
 interface WishlistCardProps {
   wishlist: Wishlist
@@ -17,6 +21,7 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
   const router = useRouter()
   const [showEditModal, setShowEditModal] = useState(false)
   const [currentWishlist, setCurrentWishlist] = useState(wishlist)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     setCurrentWishlist(wishlist)
@@ -96,6 +101,12 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
     }
   }
 
+  const copyToClipboard = async () => {
+    if (currentWishlist.sharedLink) {
+      await navigator.clipboard.writeText(currentWishlist.sharedLink);
+    }
+  };
+
   return (
     <>
       <div className="h-full">
@@ -147,7 +158,7 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
                       {
                         label: 'Share',
                         icon: Share2,
-                        onClick: () => {/* TODO: Implement share */}
+                        onClick: () => setShowShareModal(true)
                       },
                       {
                         label: 'Copy Link',
@@ -220,6 +231,52 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
           dueDate: currentWishlist.dueDate
         }}
       />
+
+      {showShareModal && (
+        <Modal isOpen={showShareModal} onClose={() => setShowShareModal(false)}>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-4">
+              Share {currentWishlist.name}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Share Link</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    value={currentWishlist.sharedLink || 'Generating share link...'}
+                    readOnly
+                    className="flex-1 border p-2 rounded-lg focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    onClick={copyToClipboard}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                  >
+                    <Copy className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <QRCode 
+                  value={currentWishlist.sharedLink || ''} 
+                  size={160}
+                  qrStyle="dots"
+                  eyeRadius={5}
+                  bgColor="#ffffff"
+                  fgColor="#1f2937"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={() => setShowShareModal(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 } 

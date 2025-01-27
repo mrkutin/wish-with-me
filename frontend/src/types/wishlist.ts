@@ -1,10 +1,12 @@
 export interface WishlistItem {
   _id: string
   name: string
+  description?: string
   url?: string
   price?: number
   currency?: string
   image?: string
+  purchased?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -17,6 +19,7 @@ export interface Wishlist {
   dueDate?: string
   items: WishlistItem[]
   sharedWith: string[]
+  sharedLink?: string
   createdAt: string
   updatedAt: string
 } 
