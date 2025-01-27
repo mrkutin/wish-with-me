@@ -161,11 +161,6 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
                         onClick: () => setShowShareModal(true)
                       },
                       {
-                        label: 'Copy Link',
-                        icon: LinkIcon,
-                        onClick: () => {/* TODO: Implement copy link */}
-                      },
-                      {
                         label: 'Delete',
                         icon: Trash2,
                         onClick: () => onDelete(currentWishlist),
