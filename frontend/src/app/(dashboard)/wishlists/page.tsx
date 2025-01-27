@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Gift, Share2, Edit, Trash2, Link as LinkIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -32,6 +32,7 @@ const useSortedWishlists = (wishlists: Wishlist[]) => {
 }
 
 export default function WishlistsPage() {
+  const { user, loading } = useAuth()
   const router = useRouter()
   const { loading: authLoading, error } = useAuth()
   const [wishlists, setWishlists] = useState<Wishlist[]>([])
@@ -42,6 +43,12 @@ export default function WishlistsPage() {
   const [deletedWishlist, setDeletedWishlist] = useState<Wishlist | null>(null)
   const [showUndoToast, setShowUndoToast] = useState(false)
   const [errorToast, setErrorToast] = useState<string | null>(null)
+
+  if (!user && !loading) {
+    const returnUrl = '/wishlists'
+    router.push(`/login?returnUrl=${encodeURIComponent(returnUrl)}`)
+    return null
+  }
 
   useEffect(() => {
     let ignore = false
@@ -62,14 +69,6 @@ export default function WishlistsPage() {
             'Cache-Control': 'no-store'
           }
         })
-
-        if (!res.ok) {
-          if (res.status === 401) {
-            router.push('/login')
-            return
-          }
-          throw new Error('Failed to fetch wishlists')
-        }
 
         const data = await res.json()
         console.log('Fetched wishlists:', data)

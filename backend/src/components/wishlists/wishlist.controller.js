@@ -425,77 +425,7 @@ router.patch('/:id/items/:itemId', updateItemSchema, async (req, res, next) => {
 
 /**
  * @swagger
- * /wishlists/{id}/share:
- *   post:
- *     summary: Share wishlist with another user
- *     tags: [Wishlists]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - userId
- *             properties:
- *               userId:
- *                 type: string
- */
-router.get('/share/:id', async (req, res, next) => {
-  try {
-    const wishlistId = req.params.id
-    const userId = req.user.userId
-    const { userId: targetUserId } = req.body
-
-    if (!targetUserId) {
-      throw new AppError(400, 'Target user ID is required')
-    }
-
-    const wishlist = await wishlistService.shareWishlist(wishlistId, userId, targetUserId)
-    res.status(201).json(wishlist)
-  } catch (error) {
-    next(error)
-  }
-})
-
-/**
- * @swagger
- * /wishlists/{id}/share/{userId}:
- *   delete:
- *     summary: Remove sharing access for a user
- *     tags: [Wishlists]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- */
-router.delete('/:id/share/:targetUserId', async (req, res, next) => {
-  try {
-    const { targetUserId } = req.params
-    const userId = req.user.userId
-    await wishlistService.unshareWishlist(userId, req.params.id, targetUserId)
-    res.status(204).send()
-  } catch (error) {
-    next(error)
-  }
-})
-
-/**
- * @swagger
- * /wishlists/share/{token}:
+ * /wishlists/wishlists/share/:token:
  *   get:
  *     summary: Get a wishlist by token
  *     tags: [Wishlists]
@@ -511,7 +441,7 @@ router.delete('/:id/share/:targetUserId', async (req, res, next) => {
  *       404:
  *         description: Wishlist not found
  */
-router.get('/share/:token', async (req, res) => {
+router.get('/get-by-token/:token', async (req, res) => {
   try {
     const wishlist = await wishlistService.getWishlistByToken(req.params.token)
     if (!wishlist) {
@@ -519,7 +449,7 @@ router.get('/share/:token', async (req, res) => {
     }
     res.json(wishlist)
   } catch (error) {
-    errorHandler(error, req, res)
+    res.status(500).json({ error: 'Server error' })
   }
 })
 

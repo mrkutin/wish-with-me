@@ -532,8 +532,87 @@
             "description": "Try to unshare wishlist that wasn't shared with user"
           },
           "response": []
+        },
+        {
+          "name": "Get Wishlist by Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/get-by-token/{{shared_token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "get-by-token", "{{shared_token}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Valid Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/get-by-token/valid_token",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "get-by-token", "valid_token"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"_id\": \"wishlist_id\",\n  \"name\": \"Sample Wishlist\",\n  \"sharedToken\": \"valid_token\"\n}"
+            },
+            {
+              "name": "Invalid Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/get-by-token/invalid_token",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "get-by-token", "invalid_token"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Wishlist not found\"\n}"
+            }
+          ]
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "shared_token",
+      "value": "04aafa0961ee8be96e4e330f99d29bb8"
     }
   ]
 } 

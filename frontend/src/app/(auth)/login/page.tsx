@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -10,6 +10,7 @@ import Image from 'next/image'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login, user, loading, clearError } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -19,9 +20,10 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      router.push('/wishlists')
+      const returnUrl = searchParams.get('returnUrl') || '/wishlists'
+      router.push(returnUrl)
     }
-  }, [user, router])
+  }, [user, router, searchParams])
 
   useEffect(() => {
     // Clear any existing auth errors when mounting
@@ -48,7 +50,8 @@ export default function LoginPage() {
         throw new Error(data.message || 'Failed to login')
       }
 
-      login(data.token, data.user)
+      await login(data.token, data.user)
+      // Redirect handled by useEffect
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {

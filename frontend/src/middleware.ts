@@ -12,7 +12,9 @@ export function middleware(request: NextRequest) {
 
   // If trying to access protected routes while not authenticated
   if (!token && path.startsWith('/wishlists')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('returnUrl', request.url)
+    return NextResponse.redirect(loginUrl)
   }
 
   return NextResponse.next()
