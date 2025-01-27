@@ -19,7 +19,7 @@ export interface Wishlist {
   dueDate?: string
   items: WishlistItem[]
   sharedWith: string[]
-  sharedLink?: string
+  sharedToken?: string
   createdAt: string
   updatedAt: string
 } 

@@ -447,7 +447,7 @@ router.patch('/:id/items/:itemId', updateItemSchema, async (req, res, next) => {
  *               userId:
  *                 type: string
  */
-router.post('/:id/share', async (req, res, next) => {
+router.get('/share/:id', async (req, res, next) => {
   try {
     const wishlistId = req.params.id
     const userId = req.user.userId
@@ -493,5 +493,34 @@ router.delete('/:id/share/:targetUserId', async (req, res, next) => {
   }
 })
 
+/**
+ * @swagger
+ * /wishlists/share/{token}:
+ *   get:
+ *     summary: Get a wishlist by token
+ *     tags: [Wishlists]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Wishlist found successfully
+ *       404:
+ *         description: Wishlist not found
+ */
+router.get('/share/:token', async (req, res) => {
+  try {
+    const wishlist = await wishlistService.getWishlistByToken(req.params.token)
+    if (!wishlist) {
+      return res.status(404).json({ error: 'Wishlist not found' })
+    }
+    res.json(wishlist)
+  } catch (error) {
+    errorHandler(error, req, res)
+  }
+})
 
 module.exports = router 

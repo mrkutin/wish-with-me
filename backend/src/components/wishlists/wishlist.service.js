@@ -16,7 +16,7 @@ class WishlistService {
       dueDate: data.dueDate || null,
       items: [],
       sharedWith: [],
-      sharedLink: `${config.get('baseUrl')}/share/${shareToken}`,
+      sharedToken: shareToken,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -409,7 +409,7 @@ class WishlistService {
     try {
       const db = dbClient.client.use('wishlists')
       const result = await db.find({
-        selector: { sharedLink: `${process.env.BASE_URL}/share/${token}` },
+        selector: { sharedToken: token },
         limit: 1
       })
       return result.docs[0] || null

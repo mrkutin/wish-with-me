@@ -101,11 +101,14 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
     }
   }
 
+  const getShareLink = (token?: string) => 
+    token ? `${process.env.NEXT_PUBLIC_BASE_URL}/wishlists/share/${token}` : ''
+
   const copyToClipboard = async () => {
-    if (currentWishlist.sharedLink) {
-      await navigator.clipboard.writeText(currentWishlist.sharedLink);
+    if (currentWishlist.sharedToken) {
+      await navigator.clipboard.writeText(getShareLink(currentWishlist.sharedToken))
     }
-  };
+  }
 
   return (
     <>
@@ -239,7 +242,9 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
                 <label className="block text-sm font-medium mb-1">Share Link</label>
                 <div className="flex gap-2 items-center">
                   <input
-                    value={currentWishlist.sharedLink || 'Generating share link...'}
+                    value={currentWishlist.sharedToken 
+                      ? getShareLink(currentWishlist.sharedToken)
+                      : 'Generating share token...'}
                     readOnly
                     className="flex-1 border p-2 rounded-lg focus:ring-2 focus:ring-primary"
                   />
@@ -254,7 +259,7 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
 
               <div className="flex justify-center">
                 <QRCode 
-                  value={currentWishlist.sharedLink || ''} 
+                  value={getShareLink(currentWishlist.sharedToken)} 
                   size={160}
                   qrStyle="dots"
                   eyeRadius={5}
