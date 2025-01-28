@@ -440,7 +440,7 @@ class WishlistService {
         throw new AppError(400, 'Target user ID is required')
       }
 
-      // Check if user exists
+      // Check if user exists and get their name
       const targetUser = await dbClient.getDocument('users', targetUserId)
       if (!targetUser) {
         throw new AppError(404, 'Target user not found')
@@ -454,14 +454,22 @@ class WishlistService {
       }
 
       // Add user to sharedWith if not already present
-      if (!updatedWishlist.sharedWith.includes(targetUserId)) {
-        updatedWishlist.sharedWith.push(targetUserId)
+      const isAlreadyShared = updatedWishlist.sharedWith.some(share => 
+        share.userId === targetUserId
+      )
+
+      if (!isAlreadyShared) {
+        updatedWishlist.sharedWith.push({
+          userId: targetUserId,
+          name: targetUser.name
+        })
         
         try {
           const res = await dbClient.updateDocument('wishlists', wishlist._id, updatedWishlist)
           logger.info('Wishlist shared successfully:', {
             wishlistId: wishlist._id,
-            targetUserId
+            targetUserId,
+            targetUserName: targetUser.name
           })
         } catch (dbError) {
           logger.error('Database error while sharing wishlist:', {
@@ -485,6 +493,23 @@ class WishlistService {
       })
       
       throw new AppError(500, 'An unexpected error occurred while sharing the wishlist')
+    }
+  }
+
+  async getSharedWishlists(userId) {
+    try {
+      const db = dbClient.client.use('wishlists')
+      const result = await db.find({
+        selector: {
+          sharedWith: { $elemMatch: { $eq: userId } }
+        },
+        use_index: "shared-with-index"
+      })
+      
+      return result.docs
+    } catch (error) {
+      logger.error(`Failed to get shared wishlists: ${JSON.stringify(error)}`)
+      throw new AppError(500, 'Failed to get shared wishlists')
     }
   }
 }

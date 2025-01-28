@@ -40,8 +40,10 @@ export async function GET(
       )
     }
     
-    const updatedWishlist: Wishlist = await res.json()
-    return NextResponse.json(updatedWishlist)
+    await res.json()
+    
+    // Redirect to wishlists page after successful sharing
+    return NextResponse.redirect(new URL('/wishlists', request.url))
     
   } catch (error) {
     console.error('[SHARE_ROUTE] Error:', error)

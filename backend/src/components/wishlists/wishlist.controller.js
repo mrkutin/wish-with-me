@@ -101,6 +101,18 @@ router.get('/', async (req, res, next) => {
   }
 })
 
+// Get wishlists shared with the user
+router.get('/shared', async (req, res, next) => {
+  try {
+    const userId = req.user.userId
+    const wishlists = await wishlistService.getSharedWishlists(userId)
+    res.json(wishlists)
+  } catch (error) {
+    next(error)
+  }
+})
+
+
 /**
  * @swagger
  * /wishlists/{id}:
@@ -480,5 +492,6 @@ router.post('/:id/unshare', async (req, res, next) => {
     next(error)
   }
 })
+
 
 module.exports = router 
