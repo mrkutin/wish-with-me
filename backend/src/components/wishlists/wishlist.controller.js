@@ -453,4 +453,32 @@ router.get('/get-by-token/:token', async (req, res) => {
   }
 })
 
+// Share a wishlist with another user
+router.post('/:token/share', async (req, res, next) => {
+  try {
+    const sharedToken = req.params.token
+    const { targetUserId } = req.body
+
+    // Find wishlist by sharedToken instead of _id
+    const updatedWishlist = await wishlistService.shareWishlistByToken(sharedToken, targetUserId)
+    res.json(updatedWishlist)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Unshare a wishlist from another user
+router.post('/:id/unshare', async (req, res, next) => {
+  try {
+    const userId = req.user.userId
+    const wishlistId = req.params.id
+    const { targetUserId } = req.body
+
+    const updatedWishlist = await wishlistService.unshareWishlist(userId, wishlistId, targetUserId)
+    res.json(updatedWishlist)
+  } catch (error) {
+    next(error)
+  }
+})
+
 module.exports = router 

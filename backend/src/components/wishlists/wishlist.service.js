@@ -102,10 +102,13 @@ class WishlistService {
         name: data.name || wishlist.name,
         description: data.description || wishlist.description,
         dueDate: data.dueDate || wishlist.dueDate,
+        items: data.items || wishlist.items,
+        sharedWith: data.sharedWith || wishlist.sharedWith,
         updatedAt: new Date().toISOString()
       }
 
       const result = await dbClient.updateDocument('wishlists', wishlistId, updatedWishlist)
+      
       return {
         ...updatedWishlist,
         _rev: result.rev
@@ -415,6 +418,73 @@ class WishlistService {
       return result.docs[0] || null
     } catch (error) {
       throw new AppError(500, 'Failed to fetch shared wishlist')
+    }
+  }
+
+  async shareWishlistByToken(sharedToken, targetUserId) {
+    try {
+      // Get wishlist by token
+      const db = dbClient.client.use('wishlists')
+      const result = await db.find({
+        selector: { sharedToken },
+        limit: 1
+      })
+      
+      const wishlist = result.docs[0]
+      if (!wishlist) {
+        throw new AppError(404, 'Wishlist not found')
+      }
+
+      // Validate targetUserId
+      if (!targetUserId) {
+        throw new AppError(400, 'Target user ID is required')
+      }
+
+      // Check if user exists
+      const targetUser = await dbClient.getDocument('users', targetUserId)
+      if (!targetUser) {
+        throw new AppError(404, 'Target user not found')
+      }
+
+      // Create updated wishlist object
+      const updatedWishlist = {
+        ...wishlist,
+        sharedWith: wishlist.sharedWith || [], // Ensure array exists
+        updatedAt: new Date().toISOString()
+      }
+
+      // Add user to sharedWith if not already present
+      if (!updatedWishlist.sharedWith.includes(targetUserId)) {
+        updatedWishlist.sharedWith.push(targetUserId)
+        
+        try {
+          const res = await dbClient.updateDocument('wishlists', wishlist._id, updatedWishlist)
+          logger.info('Wishlist shared successfully:', {
+            wishlistId: wishlist._id,
+            targetUserId
+          })
+        } catch (dbError) {
+          logger.error('Database error while sharing wishlist:', {
+            error: dbError,
+            wishlistId: wishlist._id,
+            targetUserId
+          })
+          throw new AppError(500, 'Failed to update wishlist sharing')
+        }
+      }
+
+      return updatedWishlist
+    } catch (error) {
+      if (error instanceof AppError) throw error
+      
+      logger.error('Failed to share wishlist by token:', {
+        sharedToken,
+        targetUserId,
+        error: error.message,
+        stack: error.stack
+      })
+      
+      throw new AppError(500, 'An unexpected error occurred while sharing the wishlist')
     }
   }
 }
