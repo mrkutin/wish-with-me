@@ -34,9 +34,10 @@ const useSortedWishlists = (wishlists: Wishlist[]) => {
 export default function WishlistsPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { loading: authLoading, error } = useAuth()
   const [wishlists, setWishlists] = useState<Wishlist[]>([])
+  const [sharedWishlists, setSharedWishlists] = useState<Wishlist[]>([])
   const [isLoadingWishlists, setIsLoadingWishlists] = useState(true)
+  const [isLoadingShared, setIsLoadingShared] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [deleteWishlist, setDeleteWishlist] = useState<Wishlist | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -54,7 +55,7 @@ export default function WishlistsPage() {
     let ignore = false
 
     async function fetchWishlists() {
-      if (authLoading) return
+      if (loading) return
       
       try {
         const token = Cookies.get('token')
@@ -63,23 +64,39 @@ export default function WishlistsPage() {
           return
         }
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Cache-Control': 'no-store'
-          }
-        })
+        const [personalRes, sharedRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Cache-Control': 'no-store'
+            }
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/shared`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Cache-Control': 'no-store'
+            }
+          })
+        ])
 
-        const data = await res.json()
-        console.log('Fetched wishlists:', data)
+        if (!personalRes.ok) throw new Error('Failed to fetch personal wishlists')
+        if (!sharedRes.ok) throw new Error('Failed to fetch shared wishlists')
+
+        const [personalData, sharedData] = await Promise.all([
+          personalRes.json(),
+          sharedRes.json()
+        ])
+
         if (!ignore) {
-          setWishlists(data)
+          setWishlists(personalData)
+          setSharedWishlists(sharedData)
         }
       } catch (err) {
         console.error('Failed to fetch wishlists:', err)
       } finally {
         if (!ignore) {
           setIsLoadingWishlists(false)
+          setIsLoadingShared(false)
         }
       }
     }
@@ -89,7 +106,7 @@ export default function WishlistsPage() {
     return () => {
       ignore = true
     }
-  }, [authLoading, router])
+  }, [loading, router])
 
   async function handleCreateWishlist(name: string, description: string, dueDate?: string) {
     const token = Cookies.get('token')
@@ -228,7 +245,7 @@ export default function WishlistsPage() {
 
   const sortedWishlists = useSortedWishlists(wishlists)
 
-  if (authLoading || isLoadingWishlists) {
+  if (loading || isLoadingWishlists) {
     return (
       <div className="min-h-screen bg-background-alt">
         <main className="max-w-7xl mx-auto px-6 py-8">
@@ -238,61 +255,51 @@ export default function WishlistsPage() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-background-alt p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-error/10 border border-error/20 text-error rounded-lg p-4">
-            {error}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
       <div className="min-h-screen bg-background-alt">
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          {wishlists.length === 0 ? (
-            <div className="bg-background rounded-lg border border-border p-12 text-center">
-              <div className="text-center">
-                <Gift className="h-12 w-12 mx-auto text-primary mb-4" />
-                <h2 className="text-xl font-semibold text-text-primary">Create your first wishlist</h2>
-                <p className="mt-2 text-text-secondary">Get started by creating a new wishlist.</p>
-              </div>
+        <main className="max-w-7xl mx-auto px-6 py-8 space-y-12">
+          <section>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-semibold text-text-primary">My Wishlists</h1>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Wishlist
               </button>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-semibold text-text-primary">My Wishlists</h1>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Wishlist
-                </button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {sortedWishlists.map((wishlist) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedWishlists.map((wishlist) => (
+                <WishlistCard
+                  key={wishlist._id}
+                  wishlist={wishlist}
+                  onDelete={handleDeleteWishlist}
+                  onUpdate={handleWishlistUpdate}
+                />
+              ))}
+            </div>
+          </section>
+
+          {sharedWishlists.length > 0 && (
+            <section>
+              <h2 className="text-2xl font-semibold text-text-primary mb-6">
+                Wishlists shared with me
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {sharedWishlists.map((wishlist) => (
                   <WishlistCard
                     key={wishlist._id}
                     wishlist={wishlist}
-                    onDelete={handleDeleteWishlist}
-                    onUpdate={handleWishlistUpdate}
+                    isShared
+                    onDelete={() => {}}
+                    onUpdate={() => {}}
                   />
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </main>
       </div>

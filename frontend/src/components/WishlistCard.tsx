@@ -15,6 +15,7 @@ interface WishlistCardProps {
   wishlist: Wishlist
   onDelete: (wishlist: Wishlist) => void
   onUpdate?: () => void
+  isShared?: boolean
 }
 
 export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps) {

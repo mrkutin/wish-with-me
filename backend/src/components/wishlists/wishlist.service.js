@@ -501,7 +501,11 @@ class WishlistService {
       const db = dbClient.client.use('wishlists')
       const result = await db.find({
         selector: {
-          sharedWith: { $elemMatch: { $eq: userId } }
+          sharedWith: {
+            $elemMatch: {
+              userId: userId
+            }
+          }
         },
         use_index: "shared-with-index"
       })
