@@ -243,6 +243,29 @@ export default function WishlistsPage() {
     }
   }
 
+  async function handleUnshare(wishlist: Wishlist) {
+    try {
+      const token = Cookies.get('token')
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wishlists/${wishlist._id}/unshare`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          targetUserId: user?._id
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to unshare wishlist')
+      
+      // Remove from shared wishlists if successful
+      setSharedWishlists(prev => prev.filter(w => w._id !== wishlist._id))
+    } catch (err) {
+      setErrorToast('Failed to unshare wishlist')
+    }
+  }
+
   const sortedWishlists = useSortedWishlists(wishlists)
 
   if (loading || isLoadingWishlists) {
@@ -286,7 +309,7 @@ export default function WishlistsPage() {
           {sharedWishlists.length > 0 && (
             <section>
               <h2 className="text-2xl font-semibold text-text-primary mb-6">
-                Wishlists shared with me
+                Wishlists Shared With Me
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sharedWishlists.map((wishlist) => (
@@ -294,7 +317,7 @@ export default function WishlistsPage() {
                     key={wishlist._id}
                     wishlist={wishlist}
                     isShared
-                    onDelete={() => {}}
+                    onDelete={handleUnshare}
                     onUpdate={() => {}}
                   />
                 ))}

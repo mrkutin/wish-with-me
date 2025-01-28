@@ -7,33 +7,35 @@ const config = require('../../config')
 
 class WishlistService {
   async createWishlist(userId, data) {
-    const shareToken = crypto.randomBytes(16).toString('hex')
-    const wishlist = {
-      _id: await dbClient.getUUID(),
-      userId,
-      name: data.name,
-      description: data.description || '',
-      dueDate: data.dueDate || null,
-      items: [],
-      sharedWith: [],
-      sharedToken: shareToken,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
     try {
-      const db = dbClient.client.use('wishlists')
-      const response = await db.insert(wishlist)
+      // Get user details to include name
+      const user = await dbClient.getDocument('users', userId)
+      if (!user) {
+        throw new AppError(404, 'User not found')
+      }
+
+      const wishlist = {
+        userId,
+        userName: user.name, // Add user name
+        name: data.name,
+        description: data.description,
+        dueDate: data.dueDate,
+        items: [],
+        sharedWith: [],
+        sharedToken: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      const result = await dbClient.createDocument('wishlists', wishlist)
       return {
         ...wishlist,
-        _rev: response.rev
+        _id: result.id,
+        _rev: result.rev
       }
-    } catch (dbError) {
-      logger.error(`Database error details: ${JSON.stringify({
-        error: dbError,
-        document: wishlist
-      })}`)
-      throw new AppError(500, 'Database operation failed')
+    } catch (error) {
+      logger.error(`Failed to create wishlist: ${JSON.stringify(error)}`)
+      throw new AppError(500, 'Failed to create wishlist')
     }
   }
 
@@ -306,13 +308,13 @@ class WishlistService {
         throw new AppError(403, 'Only the owner can unshare the wishlist')
       }
 
-      const index = wishlist.sharedWith.indexOf(targetUserId)
-      if (index === -1) {
+      const sharedUserIndex = wishlist.sharedWith.findIndex(share => share.userId === targetUserId)
+      if (sharedUserIndex === -1) {
         throw new AppError(400, 'Wishlist is not shared with this user')
       }
 
       // Remove target user from sharedWith array
-      wishlist.sharedWith.splice(index, 1)
+      wishlist.sharedWith.splice(sharedUserIndex, 1)
       wishlist.updatedAt = new Date().toISOString()
 
       try {

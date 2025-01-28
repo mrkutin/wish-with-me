@@ -1,4 +1,4 @@
-import { Gift, Share2, Edit, Trash2, Link as LinkIcon, Calendar } from 'lucide-react'
+import { Gift, Share2, Edit, Trash2, Link as LinkIcon, Calendar, UserMinus } from 'lucide-react'
 import Link from 'next/link'
 import DropdownMenu from './DropdownMenu'
 import { useState, useEffect } from 'react'
@@ -18,7 +18,7 @@ interface WishlistCardProps {
   isShared?: boolean
 }
 
-export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps) {
+export function WishlistCard({ wishlist, onDelete, onUpdate, isShared }: WishlistCardProps) {
   const router = useRouter()
   const [showEditModal, setShowEditModal] = useState(false)
   const [currentWishlist, setCurrentWishlist] = useState(wishlist)
@@ -146,14 +146,32 @@ export function WishlistCard({ wishlist, onDelete, onUpdate }: WishlistCardProps
                     </h3>
                   </div>
                   {currentWishlist.description && (
-                    <p className="mt-1 text-text-secondary text-sm line-clamp-2">
+                    <p className="mt-1 text-text-secondary/80 text-sm line-clamp-2 italic">
                       {currentWishlist.description}
+                    </p>
+                  )}
+                  {isShared ? (
+                    <p className="text-sm text-text-secondary mt-2 flex items-center">
+                      <Share2 className="h-4 w-4 mr-1.5 text-primary/60" />
+                      Shared by {currentWishlist.userName || 'Unknown user'}
+                    </p>
+                  ) : currentWishlist.sharedWith?.length > 0 && (
+                    <p className="text-sm text-text-secondary mt-2 flex items-center">
+                      <Share2 className="h-4 w-4 mr-1.5 text-primary/60" />
+                      Shared with {currentWishlist.sharedWith.map(share => share.name).join(', ')}
                     </p>
                   )}
                 </div>
                 <div className="ml-4 flex-shrink-0 dropdown-container">
                   <DropdownMenu
-                    items={[
+                    items={isShared ? [
+                      {
+                        label: 'Unshare',
+                        icon: UserMinus,
+                        onClick: () => onDelete(currentWishlist),
+                        variant: 'danger'
+                      }
+                    ] : [
                       {
                         label: 'Edit',
                         icon: Edit,

@@ -14,11 +14,12 @@ export interface WishlistItem {
 export interface Wishlist {
   _id: string
   userId: string
+  userName: string
   name: string
   description: string
   dueDate?: string
   items: WishlistItem[]
-  sharedWith: string[]
+  sharedWith: Array<{ userId: string; name: string }>
   sharedToken?: string
   createdAt: string
   updatedAt: string
