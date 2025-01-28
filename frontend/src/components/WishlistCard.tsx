@@ -189,6 +189,7 @@ export function WishlistCard({ wishlist, onDelete, onUpdate, isShared }: Wishlis
                         variant: 'danger'
                       }
                     ]}
+                    className="w-36"
                   />
                 </div>
               </div>

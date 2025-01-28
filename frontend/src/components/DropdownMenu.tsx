@@ -15,6 +15,7 @@ interface DropdownMenuProps {
     onClick: () => void
     variant?: 'default' | 'danger'
   }>
+  className?: string
 }
 
 export default function DropdownMenu({ items }: DropdownMenuProps) {
@@ -42,7 +43,7 @@ export default function DropdownMenu({ items }: DropdownMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-background border border-border z-10">
+        <div className="absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-background border border-border z-10">
           <div className="py-1">
             {items.map((item, index) => (
               <button
@@ -51,8 +52,9 @@ export default function DropdownMenu({ items }: DropdownMenuProps) {
                   item.onClick()
                   setIsOpen(false)
                 }}
-                className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-background-alt transition-colors
-                  ${item.variant === 'danger' ? 'text-error' : 'text-text-primary'}`}
+                className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 
+                  hover:bg-gray-100/80 transition-colors
+                  ${item.variant === 'danger' ? 'text-error hover:bg-error/5' : 'text-text-primary'}`}
               >
                 {item.icon && <item.icon className="h-4 w-4" />}
                 <span>{item.label}</span>
