@@ -87,5 +87,5 @@ Create a component-based project structure with:
 - API documentation
 
 The implementation should follow all security, performance and reliability best practices outlined above.
-
+Put all the code in the backend folder.
 

@@ -1,0 +1,618 @@
+{
+  "info": {
+    "name": "Wishlists Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": ""
+  },
+  "item": [
+    {
+      "name": "Wishlists",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Wishlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('wishlistId', jsonData._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"My Wishlist\",\n    \"description\": \"Things I want\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists"
+              ]
+            },
+            "description": "Create a new wishlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Wishlist - Empty Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"\",\n    \"description\": \"Things I want\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists"
+              ]
+            },
+            "description": "Try to create wishlist with empty name"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Wishlist - No Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Things I want\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists"
+              ]
+            },
+            "description": "Try to create wishlist without name field"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Wishlist - Invalid Description Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"My Wishlist\",\n    \"description\": 123\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists"
+              ]
+            },
+            "description": "Try to create wishlist with non-string description"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlists",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists"
+              ]
+            },
+            "description": "Get all wishlists for current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}"
+              ]
+            },
+            "description": "Get wishlist by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist - Invalid ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/invalid-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "invalid-id"
+              ]
+            },
+            "description": "Try to get wishlist with invalid ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Wishlist",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Wishlist\",\n    \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}"
+              ]
+            },
+            "description": "Update wishlist name and description"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Wishlist - Empty Name",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}"
+              ]
+            },
+            "description": "Try to update wishlist with empty name"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}"
+              ]
+            },
+            "description": "Delete wishlist by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Wishlist - Invalid ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/invalid-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "invalid-id"
+              ]
+            },
+            "description": "Try to delete wishlist with invalid ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Share Wishlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('targetUserId', jsonData.sharedWith[0]);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"userId\": \"{{targetUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "share"
+              ]
+            },
+            "description": "Share wishlist with another user"
+          },
+          "response": []
+        },
+        {
+          "name": "Share Wishlist - Invalid User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"userId\": \"invalid-user-id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "share"
+              ]
+            },
+            "description": "Try to share wishlist with non-existent user"
+          },
+          "response": []
+        },
+        {
+          "name": "Unshare Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share/{{targetUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "share",
+                "{{targetUserId}}"
+              ]
+            },
+            "description": "Remove sharing access for a user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Other User's Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{otherWishlistId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{otherWishlistId}}"
+              ]
+            },
+            "description": "Try to access wishlist of another user (should fail)"
+          },
+          "response": []
+        },
+        {
+          "name": "Share Wishlist with Self",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"userId\": \"{{userId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "share"]
+            },
+            "description": "Try to share wishlist with yourself"
+          },
+          "response": []
+        },
+        {
+          "name": "Share Already Shared Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"userId\": \"{{targetUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "share"]
+            },
+            "description": "Try to share wishlist that's already shared with user"
+          },
+          "response": []
+        },
+        {
+          "name": "Unshare Not Shared Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/share/{{targetUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "share", "{{targetUserId}}"]
+            },
+            "description": "Try to unshare wishlist that wasn't shared with user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wishlist by Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/get-by-token/{{shared_token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "get-by-token", "{{shared_token}}"]
+            }
+          },
+          "response": [
+            {
+              "name": "Valid Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/get-by-token/valid_token",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "get-by-token", "valid_token"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"_id\": \"wishlist_id\",\n  \"name\": \"Sample Wishlist\",\n  \"sharedToken\": \"valid_token\"\n}"
+            },
+            {
+              "name": "Invalid Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/wishlists/get-by-token/invalid_token",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["wishlists", "get-by-token", "invalid_token"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Wishlist not found\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "shared_token",
+      "value": "04aafa0961ee8be96e4e330f99d29bb8"
+    }
+  ]
+} 

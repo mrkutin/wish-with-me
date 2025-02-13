@@ -1,0 +1,721 @@
+{
+  "info": {
+    "name": "Items Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": ""
+  },
+  "item": [
+    {
+      "name": "Items",
+      "description": "Wishlist items management",
+      "item": [
+        {
+          "name": "Delete Non-existent Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/nonexistent-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "items", "nonexistent-id"]
+            },
+            "description": "Try to delete non-existent item"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Item from Other User's Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{otherWishlistId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{otherWishlistId}}", "items", "{{itemId}}"]
+            },
+            "description": "Try to delete item from another user's wishlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Item - Invalid Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": -1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "items", "{{itemId}}"]
+            },
+            "description": "Try to update item with negative quantity"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Item - Non-numeric Quantity",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": \"not-a-number\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{wishlistId}}", "items", "{{itemId}}"]
+            },
+            "description": "Try to update item with non-numeric quantity"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Item in Other User's Wishlist",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{otherWishlistId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "{{otherWishlistId}}", "items", "{{itemId}}"]
+            },
+            "description": "Try to update item in another user's wishlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item with Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('itemId', jsonData._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Item\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Add item with name only"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Same Item with Name Again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Item\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Add same item to test quantity increment"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item with URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://example.com/item\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Add item with URL only"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Same Item with URL Again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://example.com/item\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Add same URL item to test quantity increment"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item - Both Name and URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test Item\",\n    \"url\": \"https://example.com/item\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Try to add item with both name and URL (should fail)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item - No Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Try to add item without any fields (should fail)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item - Invalid URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"not-a-valid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Try to add item with invalid URL format"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item - Name Too Long",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"This is a very long name that exceeds the maximum allowed length of 100 characters. It should trigger a validation error when trying to create the item.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Try to add item with name longer than 100 characters"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/{{itemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items",
+                "{{itemId}}"
+              ]
+            },
+            "description": "Delete an item from wishlist"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items/{{itemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items",
+                "{{itemId}}"
+              ]
+            },
+            "description": "Update item quantity"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item - URL Too Long",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://example.com/very-long-url-that-exceeds-500-characters-limit-very-long-url-that-exceeds-500-characters-limit-very-long-url-that-exceeds-500-characters-limit-very-long-url-that-exceeds-500-characters-limit-very-long-url-that-exceeds-500-characters-limit-very-long-url-that-exceeds-500-characters-limit\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/{{wishlistId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlists",
+                "{{wishlistId}}",
+                "items"
+              ]
+            },
+            "description": "Try to add item with URL longer than 500 characters"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Ozon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.ozon.ru/product/besprovodnye-naushniki-xiaomi-buds-5-chernyy-grafit-1682717067/?advert=ADcBeTk3l5gB0M_wHoM8Qxd2XcI1EfqXyVZHLsRyL1Z_qYCocJeRd9OoD7GrCQ6ucH3fmr1wFHrJcfqidlk-0oGGvt_6_YIczIlflbEkOBTOc5ycQ_KEEkMZ0Munhz6xfYRlPRiq395MLiW6Z9gMvthc7wh7wvqocfdQMCbb8ucd0YWHKlcVP7Zk1woUsMQG0PRIAKWC2C46--ExN2jZCsL7qDdxTwa_tGS7lBZwcamSWEXb-8bR4uE9LF4&avtc=1&avte=2&avts=1737736977\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Ozon URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Wildberries",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.wildberries.ru/catalog/148440242/detail.aspx\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Wildberries URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Yandex Market",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://market.yandex.ru/product--x170/148440242\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Yandex Market URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Ozon Mobile URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://m.ozon.ru/product/smartfon-apple-iphone-13-128gb-belyy-315277760/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Ozon mobile URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Wildberries Mobile URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://m.wildberries.ru/catalog/148440242/detail.aspx\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Resolve item details from Wildberries mobile URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Invalid URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"not-a-valid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item details from invalid URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - Unsupported Marketplace",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://www.amazon.com/some-product\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item from unsupported marketplace"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Item - No URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlists/resolve-item",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlists", "resolve-item"]
+            },
+            "description": "Try to resolve item without providing URL"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+} 

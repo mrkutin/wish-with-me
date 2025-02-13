@@ -1,0 +1,22 @@
+# HTTP server - handles both domains
+server {
+    listen 80;
+    listen [::]:80;
+    server_name wishwith.me api.wishwith.me;
+
+    # Certbot challenges
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Forward requests to appropriate services during initial setup
+    location / {
+        set $target http://pwa:3001;
+        if ($host = api.wishwith.me) {
+            set $target http://backend:3000;
+        }
+        proxy_pass $target;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+} 

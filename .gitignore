@@ -1,0 +1,85 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+.env.ru.development
+.env.en.development
+.env.ru.production
+.env.en.production
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+logs/
+*.log
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Frontend specific
+frontend/.next/
+frontend/out/
+frontend/.env*
+frontend/.vercel
+frontend/build
+frontend/.turbo
+frontend/coverage
+frontend/storybook-static
+
+# Backend specific
+backend/dist/
+backend/build/
+backend/.env*
+backend/coverage/
+backend/tmp/
+backend/temp/
+
+# Database
+*.sqlite
+*.sqlite3
+couchdb_data/
+
+# Cache and temporary files
+.cache/
+.temp/
+*.tmp
+*.temp
+.eslintcache
+.tsbuildinfo
+
+# System files
+Thumbs.db
+.DS_Store
+*.pem
+
+# Misc
+*.bak
+*.swp
+*.swo
+*~

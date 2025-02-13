@@ -1,0 +1,32 @@
+{
+  "name": "wishwithme-pwa",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode development",
+    "build": "vue-tsc && vite build --mode production",
+    "preview": "vite preview --mode production"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.1.1",
+    "lucide-vue-next": "^0.344.0",
+    "pinia": "^2.3.1",
+    "pinia-plugin-persistedstate": "^4.2.0",
+    "qrcode.vue": "^3.6.0",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@vitejs/plugin-vue": "^4.3.4",
+    "@vue/tsconfig": "^0.4.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.9",
+    "vite-plugin-pwa": "^0.16.5",
+    "vue-tsc": "^2.2.0"
+  }
+}

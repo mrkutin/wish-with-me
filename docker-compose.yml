@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - letsencrypt:/etc/letsencrypt
+    depends_on:
+      - pwa
+      - backend
+    networks:
+      - app_network
+
+  pwa:
+    build:
+      context: ./pwa
+      dockerfile: Dockerfile
+    container_name: wishwithme-pwa
+    expose:
+      - "${VITE_PORT}"
+    # ports:
+    #   - "${VITE_PORT}:${VITE_PORT}"
+    environment:
+      - VITE_DEFAULT_LOCALE=${VITE_DEFAULT_LOCALE}
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_PORT=${VITE_PORT}
+    networks:
+      - app_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wishwithme-backend
+    expose:
+      - "${BACKEND_PORT}"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    cap_add:
+      - SYS_ADMIN
+    init: true
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - COUCHDB_HOST=${COUCHDB_HOST}
+      - COUCHDB_PORT=${COUCHDB_PORT}
+      - COUCHDB_USERNAME=${COUCHDB_USERNAME}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+      - COUCHDB_USERS_DB=${COUCHDB_USERS_DB}
+      - COUCHDB_WISHLISTS_DB=${COUCHDB_WISHLISTS_DB}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID}
+      - YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET}
+      - YANDEX_CALLBACK_URL=${YANDEX_CALLBACK_URL}
+      - VK_CLIENT_ID=${VK_CLIENT_ID}
+      - VK_CLIENT_SECRET=${VK_CLIENT_SECRET}
+      - VK_CALLBACK_URL=${VK_CALLBACK_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+    networks:
+      - app_network
+    depends_on:
+      couchdb:
+        condition: service_healthy
+    
+  couchdb:
+    image: couchdb:3.3.2
+    container_name: wishwithme-couchdb
+    expose:
+      - "5984"
+    ports:
+      - "5984:5984"
+    environment:
+      - COUCHDB_USER=${COUCHDB_USERNAME}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  couchdb_data:
+  letsencrypt: 
