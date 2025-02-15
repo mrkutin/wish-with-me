@@ -1,4 +1,5 @@
 <template>
+  <SEOHead />
   <div class="min-h-screen flex flex-col">
     <TheNavbar />
     <main class="flex-1">
@@ -14,6 +15,7 @@ import TheNavbar from './components/TheNavbar.vue'
 import TheFooter from './components/TheFooter.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { useAuthStore } from '@/stores/auth'
+import SEOHead from './components/SEOHead.vue'
 
 const auth = useAuthStore()
 </script>

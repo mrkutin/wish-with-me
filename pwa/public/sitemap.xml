@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+    <url>
+      <loc>https://wishwith.me</loc>
+      
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="en"
+          href="https://wishwith.me"
+        />
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="ru"
+          href="https://wishwith.me/ru"
+        />
+      <xhtml:link 
+        rel="alternate" 
+        hreflang="x-default"
+        href="https://wishwith.me"
+      />
+      <lastmod>2025-02-15T06:58:26.224Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>1.0</priority>
+    </url>
+  
+    <url>
+      <loc>https://wishwith.me/about</loc>
+      
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="en"
+          href="https://wishwith.me/about"
+        />
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="ru"
+          href="https://wishwith.me/ru/about"
+        />
+      <xhtml:link 
+        rel="alternate" 
+        hreflang="x-default"
+        href="https://wishwith.me/about"
+      />
+      <lastmod>2025-02-15T06:58:26.224Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+  
+    <url>
+      <loc>https://wishwith.me/features</loc>
+      
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="en"
+          href="https://wishwith.me/features"
+        />
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="ru"
+          href="https://wishwith.me/ru/features"
+        />
+      <xhtml:link 
+        rel="alternate" 
+        hreflang="x-default"
+        href="https://wishwith.me/features"
+      />
+      <lastmod>2025-02-15T06:58:26.224Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+  
+    <url>
+      <loc>https://wishwith.me/privacy</loc>
+      
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="en"
+          href="https://wishwith.me/privacy"
+        />
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="ru"
+          href="https://wishwith.me/ru/privacy"
+        />
+      <xhtml:link 
+        rel="alternate" 
+        hreflang="x-default"
+        href="https://wishwith.me/privacy"
+      />
+      <lastmod>2025-02-15T06:58:26.224Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+  
+    <url>
+      <loc>https://wishwith.me/terms</loc>
+      
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="en"
+          href="https://wishwith.me/terms"
+        />
+        <xhtml:link 
+          rel="alternate" 
+          hreflang="ru"
+          href="https://wishwith.me/ru/terms"
+        />
+      <xhtml:link 
+        rel="alternate" 
+        hreflang="x-default"
+        href="https://wishwith.me/terms"
+      />
+      <lastmod>2025-02-15T06:58:26.224Z</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+    </url>
+  
+</urlset>

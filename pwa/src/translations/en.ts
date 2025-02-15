@@ -731,4 +731,14 @@ export const translations = {
       deleteError: 'Failed to delete account'
     }
   },
+  meta: {
+    defaultTitle: 'WishWithMe - Create and Share Wishlists',
+    defaultDescription: 'Create, manage and share your wishlists with friends and family. Perfect for birthdays, holidays, and special occasions.',
+    defaultKeywords: 'wishlist, gift registry, wish list, gift list, birthday wishlist, wedding registry',
+    home: {
+      title: 'WishWithMe - Create Your Perfect Wishlist',
+      description: 'Create and share wishlists for any occasion. Make gift-giving easier with WishWithMe.',
+      keywords: 'create wishlist, share wishlist, gift registry'
+    },
+  }
 } as const 

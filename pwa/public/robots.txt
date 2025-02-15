@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /callback
+Disallow: /login
+Disallow: /signup
+Disallow: /settings
+
+Sitemap: https://wishwith.me/sitemap.xml 
