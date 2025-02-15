@@ -64,15 +64,15 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url))
       }
     },
+    optimizeDeps: {
+      include: ['@fontsource/inter']
+    },
     server: {
       host: true,
       port,
       strictPort: true,
       fs: {
-        allow: [
-          '..',
-          'node_modules/@fontsource/inter/files'
-        ]
+        strict: false  // This is important for serving node_modules content
       },
       allowedHosts: [
         'wishwith.me',
@@ -83,6 +83,20 @@ export default defineConfig(({ mode }) => {
     preview: {
       host: true,
       port: parseInt(process.env.VITE_PREVIEW_PORT || '3001')
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name) {
+              if (/\.(woff|woff2|eot|ttf|otf)$/.test(assetInfo.name)) {
+                return 'assets/fonts/[name][extname]'
+              }
+            }
+            return 'assets/[name]-[hash][extname]'
+          }
+        }
+      }
     }
   }
 }) 

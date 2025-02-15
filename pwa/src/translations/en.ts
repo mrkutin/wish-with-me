@@ -140,10 +140,10 @@ export const translations = {
     },
     shared: {
       title: 'Wishlists I Follow',
+      unknownUser: 'Unknown User',
       sharedBy: 'Shared by',
       unfollowed: 'Unfollowed "{name}"',
       sharedWith: 'Followers',
-      unknownUser: 'Unknown user',
       unfollowConfirm: {
         title: 'Unfollow Wishlist',
         message: 'Are you sure you want to unfollow this wishlist? You can always follow it again later.'

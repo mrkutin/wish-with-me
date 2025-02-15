@@ -47,7 +47,8 @@ app.use(cors({
       'https://api.wishwith.me',
       'https://accounts.google.com',
       'https://oauth.yandex.ru',
-      'https://oauth.vk.com'
+      'https://oauth.vk.com',
+      'http://localhost:3001'
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {

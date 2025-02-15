@@ -113,19 +113,26 @@
           <Share2 class="h-5 w-5 mr-2 text-primary/60" />
           {{ t.wishlists.shared.title }}
         </h2>
-        <div :class="[
-          'grid gap-6',
-          viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
-        ]">
-          <WishlistCard
-            v-for="wishlist in filteredSharedWishlists"
-            :key="wishlist._id"
-            :wishlist="wishlist"
-            :view-mode="viewMode"
-            :is-shared="true"
-            @delete="handleUnshare"
-            @update="() => {}"
-          />
+        
+        <!-- Group by owner -->
+        <div class="space-y-8">
+          <div v-for="[ownerName, ownerWishlists] in groupedSharedWishlists" :key="ownerName" class="space-y-4">
+            <h3 class="text-lg font-medium text-text-primary">{{ ownerName }}</h3>
+            <div :class="[
+              'grid gap-6',
+              viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
+            ]">
+              <WishlistCard
+                v-for="wishlist in ownerWishlists"
+                :key="wishlist._id"
+                :wishlist="wishlist"
+                :view-mode="viewMode"
+                :is-shared="true"
+                @delete="handleUnshare"
+                @update="() => {}"
+              />
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -271,6 +278,21 @@ const filteredSharedWishlists = computed(() =>
     w.description?.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 )
+
+// Add this computed property
+const groupedSharedWishlists = computed(() => {
+  const groups = filteredSharedWishlists.value.reduce((acc, wishlist) => {
+    const ownerName = wishlist.userName || t.wishlists.shared.unknownUser
+    if (!acc[ownerName]) {
+      acc[ownerName] = []
+    }
+    acc[ownerName].push(wishlist)
+    return acc
+  }, {} as Record<string, Wishlist[]>)
+
+  // Sort owners alphabetically
+  return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
+})
 
 // Fetch wishlists on mount
 onMounted(async () => {
