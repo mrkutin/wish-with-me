@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
-    "build": "vue-tsc && vite build --mode production && tsx scripts/generate-sitemap.ts",
+    "build": "node ./node_modules/vite/bin/vite.js build --mode production && node scripts/generate-sitemap.js",
     "preview": "vite preview --mode production"
   },
   "dependencies": {
@@ -29,7 +29,6 @@
     "tsx": "^4.19.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.9",
-    "vite-plugin-pwa": "^0.16.5",
-    "vue-tsc": "^2.2.0"
+    "vite-plugin-pwa": "^0.16.5"
   }
 }
