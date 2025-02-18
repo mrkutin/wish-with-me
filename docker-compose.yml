@@ -5,6 +5,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -22,11 +23,11 @@ services:
     build:
       context: ./pwa
       dockerfile: Dockerfile
-    container_name: wishwithme-pwa
+    deploy:
+      replicas: 2
+    restart: always
     expose:
       - "${VITE_PORT}"
-    # ports:
-    #   - "${VITE_PORT}:${VITE_PORT}"
     environment:
       - VITE_DEFAULT_LOCALE=${VITE_DEFAULT_LOCALE}
       - VITE_API_URL=${VITE_API_URL}
@@ -38,11 +39,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: wishwithme-backend
+    deploy:
+      replicas: 2
+    restart: always
     expose:
       - "${BACKEND_PORT}"
-    ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
     cap_add:
       - SYS_ADMIN
     init: true
@@ -74,7 +75,7 @@ services:
     
   couchdb:
     image: couchdb:3.3.2
-    container_name: wishwithme-couchdb
+    restart: always
     expose:
       - "5984"
     ports:
